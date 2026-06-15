@@ -3,6 +3,7 @@ import api, { productAPI, orderAPI, uploadAPI } from '../services/api';
 import { useNavigate } from 'react-router-dom';
 
 const AdminDashboard = () => {
+  const navigate = useNavigate();
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
   const [activeTab, setActiveTab] = useState('products');
@@ -13,25 +14,7 @@ const AdminDashboard = () => {
   const [formData, setFormData] = useState({
     name: '', category: 'pens', price: '', quantity: '', description: '', image: '', isPopular: false, isNew: false
   });
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (!localStorage.getItem('adminToken')) {
-      navigate('/admin-login');
-      return;
-    }
-    fetchProducts();
-    fetchOrders();
-    fetchEarnings();
-    
-    const interval = setInterval(fetchOrders, 30000);
-    const earningsInterval = setInterval(fetchEarnings, 60000);
-    return () => {
-      clearInterval(interval);
-      clearInterval(earningsInterval);
-    };
-  }, [navigate]);
-
+  
   const fetchProducts = async () => {
     try {
       const res = await productAPI.getAll();
@@ -65,6 +48,26 @@ const AdminDashboard = () => {
       console.error(err);
     }
   };
+  useEffect(() => {
+  if (!localStorage.getItem('adminToken')) {
+    navigate('/admin-login');
+    return;
+  }
+
+  fetchProducts();
+  fetchOrders();
+  fetchEarnings();
+
+  const interval = setInterval(fetchOrders, 30000);
+  const earningsInterval = setInterval(fetchEarnings, 60000);
+
+  return () => {
+    clearInterval(interval);
+    clearInterval(earningsInterval);
+  };
+}, [navigate]);
+    
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();

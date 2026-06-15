@@ -12,15 +12,6 @@ const ProductDetail = () => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetchProduct();
-    }, [id]);
-
-    useEffect(() => {
-        if (product) {
-            fetchRelated();
-        }
-    }, [product, id]);
-
     const fetchProduct = async () => {
         try {
             const res = await productAPI.getById(id);
@@ -32,18 +23,32 @@ const ProductDetail = () => {
         }
     };
 
+    fetchProduct();
+}, [id]);
+
+useEffect(() => {
     const fetchRelated = async () => {
+        if (!product) return;
+
         try {
             const res = await productAPI.getAll();
+
             const related = res.data.products
-                .filter(p => p.category === product?.category && p._id !== id)
+                .filter(
+                    p =>
+                        p.category === product.category &&
+                        p._id !== id
+                )
                 .slice(0, 4);
+
             setRelatedProducts(related);
         } catch (err) {
             console.error(err);
         }
     };
-     
+
+    fetchRelated();
+}, [product, id]);
     const handleShare = () => {
     const url = window.location.href;
     const text = `Check out ${product.name} at Educare Point Cyber Cafe - ₹${product.price}`;
