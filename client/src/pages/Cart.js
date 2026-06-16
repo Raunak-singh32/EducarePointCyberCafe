@@ -13,6 +13,7 @@ const Cart = () => {
     pickupTime: 'Today 5 PM'
   });
   const [orderPlaced, setOrderPlaced] = useState(false);
+  const [orderTotal, setOrderTotal] = useState(0);  // ← ADD THIS
 
   const handleCheckout = async (e) => {
     e.preventDefault();
@@ -24,10 +25,12 @@ const Cart = () => {
         quantity: item.quantity
       }));
       
+      setOrderTotal(total);  // ← SAVE BEFORE CLEARING
+      
       await orderAPI.create({
         serviceType: 'product-order',
         items: orderItems,
-        totalPrice: total,
+        totalPrice: Number(total),
         customerName: orderData.customerName,
         customerPhone: orderData.customerPhone,
         pickupTime: orderData.pickupTime
@@ -39,7 +42,6 @@ const Cart = () => {
       alert('Error placing order');
     }
   };
-
   if (orderPlaced) {
   return (
     <div className="cart-page success-page">
@@ -49,9 +51,23 @@ const Cart = () => {
         <p>Thank you, {orderData.customerName}!</p>
         <p>Your order will be ready for pickup at {orderData.pickupTime}</p>
         <div className="order-details-summary">
-          <p>Total: ₹{total}</p>
+          <p>Total: ₹{orderTotal}</p>
           <p>Phone: {orderData.customerPhone}</p>
         </div>
+        
+        {/* ADD THIS UPI SECTION */}
+        <div className="payment-section">
+          <h3>💳 Pay via UPI</h3>
+          <div className="upi-box">
+            <p><strong>UPI ID: educarepoint@upi</strong></p>
+            <p>Amount: ₹{orderTotal}</p>
+            <p>Or scan QR code at shop</p>
+          </div>
+          <p className="note">
+            After payment, owner will verify and WhatsApp you: "Done, come and take!"
+          </p>
+        </div>
+        
         <button onClick={() => navigate('/')} className="shop-btn">Continue Shopping</button>
       </div>
     </div>

@@ -101,7 +101,7 @@ const Services = () => {
         pickupTime: formData.pickupTime,
         notes: formData.notes,
         fileUrl: fileUrl,
-        items: selectedItems.map(i => ({ itemId: i._id, name: i.name, price: i.price }))
+       items: selectedItems.map(i => ({ itemId: i._id, name: i.name, price: i.price, quantity: 1 }))
       };
       
       const res = await orderAPI.create(orderData);
