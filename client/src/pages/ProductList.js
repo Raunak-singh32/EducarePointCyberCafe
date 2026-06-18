@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useReveal } from '../useScrollEffects';
 import { useNavigate } from 'react-router-dom';
 import { productAPI } from '../services/api';
 import { useCart } from '../context/CartContext';
@@ -7,6 +8,105 @@ import Testimonials from '../components/Testimonials';
 import ServicesSection from '../components/ServicesSection';
 import ContactSection from '../components/ContactSection';
 import Loading from '../components/Loading';
+
+// ProductCard component with reveal animation
+function ProductCard({ product, onClick, onQuickView, onAddToCart, onCompareToggle, isComparing }) {
+  const { ref, className } = useReveal();
+  
+  return (
+    <div 
+      ref={ref} 
+      className={`product-card ${className}`} 
+      onClick={onClick}
+      style={{cursor: 'pointer'}}
+    >
+      <div className="product-image">
+        {product.image ? (
+          <img src={product.image} alt={product.name} />
+        ) : (
+          <div className="placeholder-image">No Image</div>
+        )}
+        <div className="quick-view-overlay">
+          <button onClick={(e) => { e.stopPropagation(); onQuickView(product); }} className="quick-view-btn">
+            👁️ Quick View
+          </button>
+        </div>
+      </div>
+      <div className="product-info">
+        <h3>{product.name}</h3>
+        <p className="category">{product.category}</p>
+        <p className="description">{product.description}</p>
+        <div className="product-footer">
+          <span className="price">₹{product.price}</span>
+          <div className="badges">
+            {product.isPopular && <span className="badge popular">🔥 Popular</span>}
+            {product.isNew && <span className="badge new">✨ New</span>}
+            <span className={`badge ${product.stockStatus}`}>
+              {product.stockStatus === 'in-stock' ? 'In Stock' : 
+               product.stockStatus === 'low-stock' ? 'Low Stock' : 'Coming Soon'}
+            </span>
+          </div>
+        </div>
+        <button 
+          onClick={(e) => { e.stopPropagation(); onAddToCart(product); }}
+          className="add-to-cart-btn"
+          disabled={product.stockStatus === 'out-of-stock'}
+        >
+          {product.stockStatus === 'out-of-stock' ? '⏳ Coming Soon' : '🛒 Add to Cart'}
+        </button>
+        <button 
+          onClick={(e) => { e.stopPropagation(); onCompareToggle(product); }}
+          className={`compare-btn ${isComparing ? 'active' : ''}`}
+        >
+          {isComparing ? '✓ Added to Compare' : '⚖️ Compare'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// Featured Product Card with reveal
+function FeaturedCard({ product, onClick, onQuickView, onAddToCart }) {
+  const { ref, className } = useReveal();
+  
+  return (
+    <div 
+      ref={ref} 
+      className={`product-card featured-card ${className}`}
+      onClick={onClick}
+    >
+      <div className="product-image">
+        {product.image ? (
+          <img src={product.image} alt={product.name} />
+        ) : (
+          <div className="placeholder-image">No Image</div>
+        )}
+        <div className="quick-view-overlay">
+          <button onClick={(e) => { e.stopPropagation(); onQuickView(product); }} className="quick-view-btn">
+            👁️ Quick View
+          </button>
+        </div>
+      </div>
+      <div className="product-info">
+        <h3>{product.name}</h3>
+        <p className="category">{product.category}</p>
+        <div className="product-footer">
+          <span className="price">₹{product.price}</span>
+          <div className="badges">
+            {product.isPopular && <span className="badge popular">🔥 Popular</span>}
+            {product.isNew && <span className="badge new">✨ New</span>}
+          </div>
+        </div>
+        <button 
+          onClick={(e) => { e.stopPropagation(); onAddToCart(product); }}
+          className="add-to-cart-btn"
+        >
+          🛒 Add to Cart
+        </button>
+      </div>
+    </div>
+  );
+}
 
 const ProductList = () => {
     const [products, setProducts] = useState([]);
@@ -65,6 +165,12 @@ const ProductList = () => {
         setTimeout(() => setShowToast(false), 2000);
     };
 
+    const handleCompareToggle = (product) => {
+        compareList.find(p => p._id === product._id) 
+            ? removeFromCompare(product._id) 
+            : addToCompare(product);
+    };
+
     const fetchProducts = async () => {
         try {
             setLoading(true);
@@ -115,41 +221,13 @@ const ProductList = () => {
                         {products
                             .filter(p => p.isPopular || p.isNew)
                             .map(product => (
-                                <div 
-                                    key={`featured-${product._id}`} 
-                                    className="product-card featured-card"
+                                <FeaturedCard
+                                    key={`featured-${product._id}`}
+                                    product={product}
                                     onClick={() => navigate(`/product/${product._id}`)}
-                                >
-                                    <div className="product-image">
-                                        {product.image ? (
-                                            <img src={product.image} alt={product.name} />
-                                        ) : (
-                                            <div className="placeholder-image">No Image</div>
-                                        )}
-                                        <div className="quick-view-overlay">
-                                            <button onClick={(e) => { e.stopPropagation(); setQuickView(product); }} className="quick-view-btn">
-                                                👁️ Quick View
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <div className="product-info">
-                                        <h3>{product.name}</h3>
-                                        <p className="category">{product.category}</p>
-                                        <div className="product-footer">
-                                            <span className="price">₹{product.price}</span>
-                                            <div className="badges">
-                                                {product.isPopular && <span className="badge popular">🔥 Popular</span>}
-                                                {product.isNew && <span className="badge new">✨ New</span>}
-                                            </div>
-                                        </div>
-                                        <button 
-                                            onClick={(e) => { e.stopPropagation(); handleAddToCart(product); }}
-                                            className="add-to-cart-btn"
-                                        >
-                                            🛒 Add to Cart
-                                        </button>
-                                    </div>
-                                </div>
+                                    onQuickView={setQuickView}
+                                    onAddToCart={handleAddToCart}
+                                />
                             ))}
                     </div>
                 </div>
@@ -157,59 +235,15 @@ const ProductList = () => {
 
             <div className="products-grid">
                 {filtered.map(product => (
-                    <div 
-                        key={product._id} 
-                        className="product-card" 
-                        onClick={() => navigate(`/product/${product._id}`)} 
-                        style={{cursor: 'pointer'}}
-                    >
-                        <div className="product-image">
-                            {product.image ? (
-                                <img src={product.image} alt={product.name} />
-                            ) : (
-                                <div className="placeholder-image">No Image</div>
-                            )}
-                            <div className="quick-view-overlay">
-                                <button onClick={(e) => { e.stopPropagation(); setQuickView(product); }} className="quick-view-btn">
-                                    👁️ Quick View
-                                </button>
-                            </div>
-                        </div>
-                        <div className="product-info">
-                            <h3>{product.name}</h3>
-                            <p className="category">{product.category}</p>
-                            <p className="description">{product.description}</p>
-                            <div className="product-footer">
-                                <span className="price">₹{product.price}</span>
-                                <div className="badges">
-                                    {product.isPopular && <span className="badge popular">🔥 Popular</span>}
-                                    {product.isNew && <span className="badge new">✨ New</span>}
-                                    <span className={`badge ${product.stockStatus}`}>
-                                        {product.stockStatus === 'in-stock' ? 'In Stock' : 
-                                         product.stockStatus === 'low-stock' ? 'Low Stock' : 'Coming Soon'}
-                                    </span>
-                                </div>
-                            </div>
-                            <button 
-                                onClick={(e) => { e.stopPropagation(); handleAddToCart(product); }}
-                                className="add-to-cart-btn"
-                                disabled={product.stockStatus === 'out-of-stock'}
-                            >
-                                {product.stockStatus === 'out-of-stock' ? '⏳ Coming Soon' : '🛒 Add to Cart'}
-                            </button>
-                            <button 
-                                onClick={(e) => { 
-                                    e.stopPropagation(); 
-                                    compareList.find(p => p._id === product._id) 
-                                        ? removeFromCompare(product._id) 
-                                        : addToCompare(product);
-                                }}
-                                className={`compare-btn ${compareList.find(p => p._id === product._id) ? 'active' : ''}`}
-                            >
-                                {compareList.find(p => p._id === product._id) ? '✓ Added to Compare' : '⚖️ Compare'}
-                            </button>
-                        </div>
-                    </div>
+                    <ProductCard
+                        key={product._id}
+                        product={product}
+                        onClick={() => navigate(`/product/${product._id}`)}
+                        onQuickView={setQuickView}
+                        onAddToCart={handleAddToCart}
+                        onCompareToggle={handleCompareToggle}
+                        isComparing={!!compareList.find(p => p._id === product._id)}
+                    />
                 ))}
             </div>
             
@@ -248,7 +282,7 @@ const ProductList = () => {
             <ServicesSection />
             <Testimonials />
             
-            {/* Compare Bar - INSIDE the main div */}
+            {/* Compare Bar */}
             {compareList.length > 0 && (
                 <div className="compare-bar">
                     <div className="compare-items">

@@ -16,7 +16,8 @@ const productSchema = new mongoose.Schema({
     "craft",
     "sports",
     "utility",
-    "furniture"
+    "furniture",
+     "paper"
   ]
 },
     subcategory: { 
