@@ -7,21 +7,21 @@
 :root {
   /* Brand gradient (used for hero, glow, accents) */
   --color-blue: #667eea;
-  --color-purple: #764ba2;
-  --color-pink: #f093fb;
+  --color-magenta: #2f6fed;
+--color-violet-deep: #0a1e4d;
   --gradient-brand: linear-gradient(135deg, var(--color-blue) 0%, var(--color-purple) 50%, var(--color-pink) 100%);
   --gradient-brand-flow: linear-gradient(-45deg, var(--color-blue), var(--color-purple), var(--color-pink), var(--color-purple), var(--color-blue));
 
   /* Site-wide background palette — matched from your reference swatches */
-  --color-magenta: #bd50bb;
-  --color-violet-deep: #7702a1;
-  --color-violet-darker: #2e0a3d;
+ --color-magenta: #2f6fed;
+--color-violet-deep: #0a1e4d;
+  --color-violet-darker: #170a3d;
 
   /* Premium dark surfaces — now a deep violet base instead of navy/black,
      so the page reads as "premium purple" everywhere, not just the hero */
-  --bg-void: #0f0418;
-  --bg-base: #25092f;
-  --bg-elevated: #3d0e52;
+  --bg-void: #0b0418;
+  --bg-base: #0f092f;
+  --bg-elevated: #1c0e52;
 
   /* Text */
   --text-primary: #f5f5fa;
@@ -38,7 +38,7 @@
 
   /* Glow + shadow */
   --glow-blue: rgba(102, 126, 234, 0.45);
-  --glow-pink: rgba(240, 147, 251, 0.4);
+  --glow-pink: rgba(176, 147, 251, 0.4);
   --shadow-premium: 0 20px 50px rgba(102, 126, 234, 0.25);
   --shadow-premium-lg: 0 30px 70px rgba(0, 0, 0, 0.45);
 
@@ -2868,20 +2868,20 @@ select option {
   max-width: calc(100% - 32px);
   margin: 0 auto 30px;
   padding: 12px 22px;
-  background: linear-gradient(135deg, rgba(61, 14, 82, 0.55) 0%, rgba(189, 80, 187, 0.35) 100%);
+  background: linear-gradient(135deg, rgba(10, 30, 77, 0.55) 0%, rgba(47, 111, 237, 0.35) 100%);
   backdrop-filter: blur(var(--glass-blur));
   -webkit-backdrop-filter: blur(var(--glass-blur));
   border: 1px solid var(--glass-border);
   border-radius: 999px;
-  box-shadow: var(--depth-shadow), 0 0 40px rgba(189, 80, 187, 0.25);
+  box-shadow: var(--depth-shadow), 0 0 40px rgba(47, 111, 237, 0.25);
   transition: top var(--duration-fast) var(--ease-premium), background var(--duration-fast) ease,
               box-shadow var(--duration-fast) ease, padding var(--duration-fast) ease;
 }
 
 .navbar.scrolled {
   top: 10px;
-  background: linear-gradient(135deg, rgba(61, 14, 82, 0.8) 0%, rgba(189, 80, 187, 0.55) 100%);
-  box-shadow: var(--depth-shadow), 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 50px rgba(189, 80, 187, 0.3);
+  background: linear-gradient(135deg, rgba(10, 30, 77, 0.8) 0%, rgba(47, 111, 237, 0.55) 100%);
+ box-shadow: var(--depth-shadow), 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 50px rgba(47, 111, 237, 0.3);
   padding-top: 9px;
   padding-bottom: 9px;
 }
@@ -3034,5 +3034,92 @@ select option {
 @media (prefers-reduced-motion: reduce) {
   .tilt-3d {
     transition: none !important;
+  }
+}
+
+/* ============================================================
+   AUTO-CHANGING BACKGROUND SLIDESHOW
+   Cycles through full-bleed photos behind the entire site, each
+   crossfading into the next with a slow Ken Burns zoom. Sits
+   beneath the ambient gradient glow and grain texture (which
+   stay on top, tinted via mix-blend-mode, so the slideshow reads
+   as part of the same "premium dark" theme rather than a plain
+   photo carousel).
+
+   Markup needed once near your app root (see chat for the exact
+   JSX snippet) — five stacked <div className="bg-slide bg-slide-N">
+   layers inside a <div className="bg-slideshow">.
+   ============================================================ */
+
+.bg-slideshow {
+  position: fixed;
+  inset: 0;
+  z-index: -4;
+  overflow: hidden;
+  background: var(--bg-void); /* shows briefly while the first image loads */
+}
+
+.bg-slide {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  opacity: 0;
+  animation: bgSlideShow 48s infinite, bgKenBurns 48s infinite;
+}
+
+.bg-slide-1 { background-image: url('https://wallpapercave.com/wp/AlETQeS.jpg'); animation-delay: 0s; }
+.bg-slide-2 { background-image: url('https://cdn.wallpapersafari.com/21/59/VQRPMm.jpg'); animation-delay: 6s; }
+.bg-slide-3 { background-image: url('https://wallpapers.com/images/hd/super-cool-3d-o9vmkultq8k5kgjr.jpg'); animation-delay: 12s; }
+.bg-slide-4 { background-image: url('https://wallpapers.com/images/hd/super-cool-3d-0p4q5hnber54iyya.jpg'); animation-delay: 18s; }
+.bg-slide-5 { background-image: url('https://wallpapercave.com/wp/wp3178669.jpg'); animation-delay: 24s; }
+.bg-slide-6 { background-image: url('https://motionbgs.com/i/c/364x205/media/1057/itachi-shillouette-in-front-of-the-red-moon.jpg'); animation-delay: 30s; }
+.bg-slide-7 { background-image: url('https://motionbgs.com/i/c/364x205/media/9692/shadow-king-sung-jin-woo.3840x2160.jpg'); animation-delay: 36s; }
+.bg-slide-8 { background-image: url('https://wallpapercave.com/wp/UHie8Xp.jpg'); animation-delay: 42s; }
+
+/* Crossfade: each slide fades in, holds, fades out, then stays hidden
+   until its delay comes around again on the next loop. Percentages are
+   scaled for 8 slides (12.5% of the cycle each) instead of 5. */
+@keyframes bgSlideShow {
+  0%    { opacity: 0; }
+  2.5%  { opacity: 1; }
+  9%    { opacity: 1; }
+  11.5% { opacity: 0; }
+  100%  { opacity: 0; }
+}
+
+/* Slow zoom while each slide is visible — the "premium" cinematic feel,
+   not a static photo. */
+@keyframes bgKenBurns {
+  0%    { transform: scale(1); }
+  11.5% { transform: scale(1.08); }
+  100%  { transform: scale(1.08); }
+}
+
+/* Darken + tint the photos so site text stays readable and the colors
+   stay consistent with the rest of the premium dark theme, instead of
+   eight completely different photo color palettes flashing past. */
+.bg-slideshow::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background:
+    linear-gradient(180deg, rgba(7, 7, 15, 0.75) 0%, rgba(7, 7, 15, 0.55) 50%, rgba(7, 7, 15, 0.85) 100%),
+    linear-gradient(135deg, var(--color-purple) 0%, transparent 60%);
+  mix-blend-mode: multiply;
+  opacity: 0.85;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bg-slide {
+    animation: bgSlideShowReduced 48s infinite;
+  }
+  @keyframes bgSlideShowReduced {
+    0%    { opacity: 0; }
+    2.5%  { opacity: 1; }
+    9%    { opacity: 1; }
+    11.5% { opacity: 0; }
+    100%  { opacity: 0; }
   }
 }

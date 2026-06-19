@@ -29,7 +29,18 @@ function AppContent() {
   return (
     <div className="App">
       {/* Scroll tint overlay */}
-      <div className="scroll-tint-overlay"></div>
+      <div className="bg-slideshow">
+  <div className="bg-slide bg-slide-1"></div>
+  <div className="bg-slide bg-slide-2"></div>
+  <div className="bg-slide bg-slide-3"></div>
+  <div className="bg-slide bg-slide-4"></div>
+  <div className="bg-slide bg-slide-5"></div>
+  <div className="bg-slide bg-slide-6"></div>
+  <div className="bg-slide bg-slide-7"></div>
+  <div className="bg-slide bg-slide-8"></div>
+</div>
+      <div className="scroll-tint-overlay">
+      </div>
       
       {/* Hero Section */}
       <section className="hero-section">
