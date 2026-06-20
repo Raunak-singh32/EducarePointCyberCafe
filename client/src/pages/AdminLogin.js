@@ -52,7 +52,7 @@ const AdminLogin = () => {
           <button type="submit" className="login-btn">Login</button>
         </form>
         
-        <p className="hint">Default: admin / educare123</p>
+        {/* <p className="hint">Default: admin / educare123</p> */}
       </div>
     </div>
   );
