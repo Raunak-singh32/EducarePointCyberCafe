@@ -89,7 +89,7 @@ function AppContent() {
       </footer>
       
       <a 
-        href="https://wa.me/8820425203?text=Hi%20Educare%20Point,%20I%20have%20a%20question" 
+        href="https://wa.me/919331443939?text=Hi%20Educare%20Point,%20I%20have%20a%20question" 
         className="whatsapp-float" 
         target="_blank" 
         rel="noreferrer"

@@ -49,10 +49,10 @@ const Services = () => {
     
     switch(formData.serviceType) {
       case 'print':
-        pricePerPage = formData.printType === 'color' ? 10 : 3;
+        pricePerPage = formData.printType === 'color' ? 5 : 2;
         break;
       case 'xerox':
-        pricePerPage = 2;
+        pricePerPage = 1;
         break;
       case 'scan':
         pricePerPage = 5;
@@ -64,7 +64,7 @@ const Services = () => {
         pricePerPage = 50;
         break;
       default:
-        pricePerPage = 3;
+        pricePerPage = 2;
     }
 
     if (formData.paperSize === 'A3') pricePerPage *= 2;
@@ -164,7 +164,7 @@ const Services = () => {
           <div className="payment-section">
             <h3>💳 Pay via UPI</h3>
             <div className="upi-box">
-              <p><strong>UPI ID: educarepoint@upi</strong></p>
+              <p><strong>UPI ID: 9331443939@ybl</strong></p>
               <p>Amount: ₹{calculatePrice()}</p>
               <p>Or scan QR code at shop</p>
             </div>
@@ -188,12 +188,12 @@ const Services = () => {
       <div className="services-grid">
         <div className="service-card">
           <h3>🖨️ Print</h3>
-          <p>B&W: ₹3/page</p>
-          <p>Color: ₹10/page</p>
+          <p>B&W: ₹2/page</p>
+          <p>Color: ₹5/page</p>
         </div>
         <div className="service-card">
           <h3>📄 Xerox</h3>
-          <p>₹2/page (A4)</p>
+          <p>₹1/page (A4)</p>
         </div>
         <div className="service-card">
           <h3>📷 Scan</h3>
@@ -201,15 +201,11 @@ const Services = () => {
         </div>
         <div className="service-card">
           <h3>📎 Lamination</h3>
-          <p>₹30-50/document</p>
+          <p>₹30/document</p>
         </div>
         <div className="service-card">
           <h3>📚 Spiral Binding</h3>
-          <p>₹50-100/report</p>
-        </div>
-        <div className="service-card">
-          <h3>💻 Cyber Cafe</h3>
-          <p>₹20/hour</p>
+          <p>₹50/report</p>
         </div>
       </div>
 
@@ -240,7 +236,7 @@ const Services = () => {
                     checked={formData.printType === 'black-white'}
                     onChange={handleChange}
                   />
-                  Black & White (₹3/page)
+                  Black & White (₹2/page)
                 </label>
                 <label>
                   <input
@@ -250,7 +246,7 @@ const Services = () => {
                     checked={formData.printType === 'color'}
                     onChange={handleChange}
                   />
-                  Color (₹10/page)
+                  Color (₹5/page)
                 </label>
               </div>
             </div>
@@ -383,11 +379,12 @@ const Services = () => {
           <select name="pickupTime" value={formData.pickupTime} onChange={handleChange}>
             <option>Today 10 AM</option>
             <option>Today 12 PM</option>
-            <option>Today 3 PM</option>
+            <option>Today 2 PM</option>
             <option>Today 5 PM</option>
             <option>Today 7 PM</option>
             <option>Tomorrow 10 AM</option>
             <option>Tomorrow 12 PM</option>
+            <option>When Available wtsp me</option>
           </select>
         </div>
 

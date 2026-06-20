@@ -33,14 +33,17 @@ app.get('/', (req, res) => {
 
 // Health check
 app.get('/health', (req, res) => {
-    res.json({ 
-        status: 'healthy',
-        database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
+    res.status(200).json({
+        status: 'ok',
+        service: 'Educare Point Backend',
+        database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+        uptime: Math.floor(process.uptime()),
+        timestamp: new Date().toISOString()
     });
 });
 // Routes
-app.use('/api/products', require('./routes/products'));
-app.use('/api/orders', require('./routes/orders'));
+// app.use('/api/products', require('./routes/products'));
+// app.use('/api/orders', require('./routes/orders'));
 app.use('/api/upload', require('./routes/upload'));        
 app.use('/uploads', express.static('uploads'));   
 

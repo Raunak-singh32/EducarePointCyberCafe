@@ -3123,3 +3123,16 @@ select option {
     100%  { opacity: 0; }
   }
 }
+.address-link {
+  color: white;
+  text-decoration: none;
+  display: inline-block;
+  line-height: 1.8;
+  transition: 0.3s;
+  cursor: pointer;
+}
+
+.address-link:hover {
+  color: #66b3ff;
+  transform: scale(1.02);
+}

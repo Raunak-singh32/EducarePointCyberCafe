@@ -106,7 +106,7 @@ useEffect(() => {
                             {product.stockStatus === 'out-of-stock' ? '⏳ Coming Soon' : '🛒 Add to Cart'}
                         </button>
                         <a 
-                            href={`https://wa.me/918888435103?text=Hi,%20I%20want%20to%20order%20${product.name}%20₹${product.price}`} 
+                            href={`https://wa.me/919331443939?text=Hi,%20I%20want%20to%20order%20${product.name}%20₹${product.price}`} 
                             target="_blank" 
                             rel="noreferrer" 
                             className="whatsapp-order-btn"

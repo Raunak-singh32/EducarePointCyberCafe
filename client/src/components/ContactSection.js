@@ -8,25 +8,33 @@ const ContactSection = () => {
         <div className="contact-card">
           <div className="contact-icon">📍</div>
           <h3>Address</h3>
-          <p>Educare Point Cyber Cafe</p>
-          <p>[Your City], [Your Area]</p>
-          <p>Near [Landmark]</p>
+         <a
+  href="https://www.google.com/maps/search/?api=1&query=782+S.K.+Nagar+Rishra+Hooghly+Naya+Basti+Jhaji+More+712249"
+  target="_blank"
+  rel="noreferrer"
+  className="address-link"
+>
+  📍 Educare Point Cyber Cafe <br />
+  782, S.K. Nagar <br />
+  Rishra, Hooghly <br />
+  Naya Basti, Jhaji More - 712249 <br />
+  🗺️ Tap to Open in Google Maps
+</a>
         </div>
         
         <div className="contact-card">
           <div className="contact-icon">⏰</div>
           <h3>Timing</h3>
-          <p>Monday - Saturday</p>
-          <p>8:00 AM - 8:00 PM</p>
-          <p>Sunday: 10:00 AM - 6:00 PM</p>
+          <p>Monday - Sunday</p>
+          <p>9:00 AM - 2:30 PM &5:00 PM - 10:00 PM</p>
         </div>
         
         <div className="contact-card">
           <div className="contact-icon">📞</div>
           <h3>Contact</h3>
-          <p>Phone: +91 8888435103</p>
-          <p>WhatsApp: +91 8888435103</p>
-          <a href="https://wa.me/918888435103" target="_blank" rel="noreferrer" className="whatsapp-link">
+          <p>Phone: +91 9331443939</p>
+          <p>WhatsApp: +91 9331443939</p>
+          <a href="https://wa.me/919331443939" target="_blank" rel="noreferrer" className="whatsapp-link">
             💬 Chat on WhatsApp
           </a>
         </div>

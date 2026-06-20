@@ -5,12 +5,11 @@ const ServicesSection = () => {
   const navigate = useNavigate();
   
   const services = [
-    { icon: '🖨️', title: 'Print', desc: 'B&W & Color printing', price: '₹3/page' },
-    { icon: '📄', title: 'Xerox', desc: 'Fast photocopying', price: '₹2/page' },
+    { icon: '🖨️', title: 'Print', desc: 'B&W & Color printing', price: 'B&W ₹2/page | Color ₹5/page' },
+    { icon: '📄', title: 'Xerox', desc: 'Fast photocopying', price: '₹1/page' },
     { icon: '📷', title: 'Scan', desc: 'Document scanning', price: '₹5/doc' },
     { icon: '📎', title: 'Lamination', desc: 'Document protection', price: '₹30+' },
     { icon: '📚', title: 'Binding', desc: 'Spiral binding', price: '₹50+' },
-    { icon: '💻', title: 'Cyber Cafe', desc: 'Internet & typing', price: '₹20/hr' },
     { icon: '📝', title: 'Form Fill', desc: 'Online forms', price: '₹50+' },
     { icon: '🎨', title: 'Project Work', desc: 'Charts & models', price: 'Custom' }
   ];
