@@ -3136,3 +3136,106 @@ select option {
   color: #66b3ff;
   transform: scale(1.02);
 }
+/* Logo container */
+.logo-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Rotating wheel logo */
+.logo-wheel {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  /* Optional: add a subtle glow */
+  filter: drop-shadow(0 0 5px rgba(255, 215, 0, 0.5));
+}
+
+/* Brand name */
+.brand-name {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #fff;
+  /* Optional: gold gradient text */
+  background: linear-gradient(45deg, #FFD700, #FFA500);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.hero-section {
+  text-align: center;
+  padding: 60px 20px;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+}
+
+.hero-logo {
+  margin-bottom: 20px;
+}
+
+.hero-wheel {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  /* Golden glow effect */
+  filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.6));
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+.hero-section h1 {
+  font-size: 3rem;
+  color: #fff;
+  margin-bottom: 10px;
+}
+
+.hero-section p {
+  font-size: 1.2rem;
+  color: #ccc;
+}
+/* ===== NAVBAR LOGO ===== */
+.nav-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  margin-right: auto; /* pushes buttons to the right */
+}
+
+.nav-logo {
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.6));
+}
+
+.nav-brand-text {
+  font-size: 1.3rem;
+  font-weight: bold;
+  background: linear-gradient(45deg, #FFD700, #FFA500);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* ===== HERO LOGO ===== */
+.hero-logo {
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: center;
+}
+
+.hero-wheel {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  filter: drop-shadow(0 0 25px rgba(255, 215, 0, 0.7));
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+}

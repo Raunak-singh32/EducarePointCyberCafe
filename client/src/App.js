@@ -58,6 +58,13 @@ function AppContent() {
           ))}
         </div>
         <div className="hero-content">
+           <div className="hero-logo">
+    <img 
+      src="/wheel-rotating.gif" 
+      alt="Educare Point" 
+      className="hero-wheel"
+    />
+  </div>
           <h1 className="hero-title">Educare Point Cyber Cafe</h1>
           <p className="hero-subtitle">Stationery, printing & cyber services — done right.</p>
         </div>
@@ -107,6 +114,16 @@ function Navbar() {
   
   return (
     <div className="nav-buttons">
+      {/* Logo + Brand Name */}
+      <div className="nav-brand" onClick={() => navigate('/')}>
+        <img 
+          src="/wheel-rotating.gif" 
+          alt="Educare Point" 
+          className="nav-logo"
+        />
+        <span className="nav-brand-text">Educare Point</span>
+      </div>
+      
       <button onClick={() => navigate('/')}>📦 Products</button>
       <button onClick={() => navigate('/services')}>🖨️ Services</button>
       <button onClick={() => navigate('/my-orders')}>📋 My Orders</button>
