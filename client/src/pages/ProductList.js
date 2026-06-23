@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useReveal } from '../useScrollEffects';
 import { useNavigate } from 'react-router-dom';
 import { productAPI } from '../services/api';
@@ -249,7 +250,7 @@ const ProductList = () => {
             
             {filtered.length === 0 && <p className="no-results">No products found</p>}
             
-            {quickView && (
+            {quickView &&  createPortal (
                 <div className="quick-view-modal" onClick={() => setQuickView(null)}>
                     <div className="quick-view-content" onClick={(e) => e.stopPropagation()}>
                         <button className="close-btn" onClick={() => setQuickView(null)}>✕</button>
@@ -269,7 +270,8 @@ const ProductList = () => {
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
             
             {showToast && (
