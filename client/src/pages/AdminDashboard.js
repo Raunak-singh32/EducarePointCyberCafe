@@ -122,7 +122,7 @@ const AdminDashboard = () => {
     
     try {
       const uploadData = new FormData();
-      uploadData.append('file', file);
+      uploadData.append('image', file);
       const res = await uploadAPI.uploadFile(uploadData);
       setFormData({...formData, image: res.data.fileUrl});
       setImagePreview('');

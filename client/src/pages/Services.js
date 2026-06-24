@@ -83,7 +83,7 @@ const Services = () => {
       
       if (formData.file) {
         const uploadData = new FormData();
-        uploadData.append('file', formData.file);
+        uploadData.append('image', formData.file);
         const uploadRes = await uploadAPI.uploadFile(uploadData);
         fileUrl = uploadRes.data.fileUrl;
       }

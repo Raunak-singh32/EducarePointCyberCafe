@@ -5,10 +5,25 @@ const Order = require('../models/Order');
 // POST create order
 router.post('/', async (req, res) => {
   try {
+    // Log what we receive (for debugging)
+    console.log('Order received:', req.body);
+    
+    // Check required fields
+    const requiredFields = ['serviceType', 'totalPrice', 'customerName', 'customerPhone', 'pickupTime'];
+    const missing = requiredFields.filter(f => !req.body[f]);
+    
+    if (missing.length > 0) {
+      return res.status(400).json({ 
+        success: false, 
+        message: `Missing required fields: ${missing.join(', ')}` 
+      });
+    }
+    
     const order = new Order(req.body);
     await order.save();
     res.status(201).json({ success: true, order });
   } catch (error) {
+    console.error('Order creation error:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 });
