@@ -161,17 +161,45 @@ const Services = () => {
             </div>
           )}
           
-          <div className="payment-section">
-            <h3>💳 Pay via UPI</h3>
-            <div className="upi-box">
-              <p><strong>UPI ID: 9331443939@ybl</strong></p>
-              <p>Amount: ₹{calculatePrice()}</p>
-              <p>Or scan QR code at shop</p>
-            </div>
-            <p className="note">
-              After payment, owner will verify and WhatsApp you: "Done, come and take!"
-            </p>
-          </div>
+             <div className="payment-section">
+  <h3>💳 Payment Options</h3>
+  
+  {/* UPI ID */}
+  <div className="upi-section">
+    <p className="upi-label">Pay via UPI:</p>
+    <div className="upi-id-box">
+      <span className="upi-id">pointeducare@ybl</span>
+      <button 
+        className="copy-btn"
+        onClick={() => {
+          navigator.clipboard.writeText('pointeducare@ybl');
+          alert('UPI ID copied to clipboard!');
+        }}
+      >
+        📋 Copy
+      </button>
+    </div>
+  </div>
+  
+  {/* QR Code */}
+<div className="qr-section">
+  <p className="qr-label">Or scan QR code:</p>
+  <img 
+    src="/phonepe-qr.png" 
+    alt="PhonePe QR Code" 
+    className="qr-code"
+    onError={(e) => {
+      e.target.style.display = 'none';
+      e.target.parentElement.innerHTML += '<p style="color: #ff6b6b;">⚠️ QR code not loaded. Use UPI ID above.</p>';
+    }}
+  />
+  <p className="qr-name">Ajay Kumar Ram</p>
+</div>
+  
+  <p className="payment-note">
+    After payment, click "Submit Order" and owner will verify.
+  </p>
+</div>
           
           <button onClick={resetForm} className="new-order-btn">
             📝 New Order
@@ -262,17 +290,7 @@ const Services = () => {
           </>
         )}
 
-        <div className="form-group">
-          <label>Number of Pages:</label>
-          <input
-            type="number"
-            name="pages"
-            min="1"
-            value={formData.pages}
-            onChange={handleChange}
-            required
-          />
-        </div>
+        
 
         <div className="form-group">
           <label>Copies:</label>

@@ -56,17 +56,41 @@ const Cart = () => {
         </div>
         
         {/* ADD THIS UPI SECTION */}
-        <div className="payment-section">
-          <h3>💳 Pay via UPI</h3>
-          <div className="upi-box">
-            <p><strong>UPI ID: educarepoint@upi</strong></p>
-            <p>Amount: ₹{orderTotal}</p>
-            <p>Or scan QR code at shop</p>
-          </div>
-          <p className="note">
-            After payment, owner will verify and WhatsApp you: "Done, come and take!"
-          </p>
-        </div>
+       <div className="upi-section">
+    <p className="upi-label">Pay via UPI:</p>
+    <div className="upi-id-box">
+      <span className="upi-id">pointeducare@ybl</span>
+      <button 
+        className="copy-btn"
+        onClick={() => {
+          navigator.clipboard.writeText('pointeducare@ybl');
+          alert('UPI ID copied to clipboard!');
+        }}
+      >
+        📋 Copy
+      </button>
+    </div>
+  </div>
+  
+  {/* QR Code */}
+<div className="qr-section">
+  <p className="qr-label">Or scan QR code:</p>
+  <img 
+    src="/phonepe-qr.png" 
+    alt="PhonePe QR Code" 
+    className="qr-code"
+    onError={(e) => {
+      e.target.style.display = 'none';
+      e.target.parentElement.innerHTML += '<p style="color: #ff6b6b;">⚠️ QR code not loaded. Use UPI ID above.</p>';
+    }}
+  />
+  <p className="qr-name">Ajay Kumar Ram</p>
+</div>
+  
+  <p className="payment-note">
+    After payment, inform and owner will verify.
+  </p>
+
         
         <button onClick={() => navigate('/')} className="shop-btn">Continue Shopping</button>
       </div>

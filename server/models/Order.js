@@ -4,7 +4,7 @@ const orderSchema = new mongoose.Schema({
   serviceType: { type: String, required: true },
   printType: { type: String, default: '' },
   paperSize: { type: String, default: 'A4' },
-  pages: { type: Number, default: 1 },
+ // pages: { type: Number, default: 1 },
   copies: { type: Number, default: 1 },
   items: [{
     itemId: String,

@@ -3576,3 +3576,81 @@ select option {
     padding: 14px;
   }
 }
+/* ===== PAYMENT SECTION STYLES ===== */
+.payment-section {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 24px;
+  margin: 20px 0;
+  text-align: center;
+}
+
+.payment-section h3 {
+  color: #FFD700;
+  margin-bottom: 20px;
+  font-size: 1.3rem;
+}
+
+.upi-section { margin-bottom: 20px; }
+.upi-label { color: #aaa; font-size: 0.9rem; margin-bottom: 8px; }
+
+.upi-id-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 12px 20px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 215, 0, 0.3);
+}
+
+.upi-id {
+  color: #FFD700;
+  font-size: 1.2rem;
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+
+.copy-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.3s ease;
+}
+
+.copy-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.qr-section { margin: 20px 0; }
+.qr-label { color: #aaa; font-size: 0.9rem; margin-bottom: 12px; }
+
+.qr-code {
+  width: 200px;
+  height: auto;
+  border-radius: 12px;
+  border: 3px solid rgba(255, 215, 0, 0.3);
+  padding: 8px;
+  background: white;
+}
+
+.qr-name {
+  color: #FFD700;
+  font-size: 0.9rem;
+  margin-top: 8px;
+  font-weight: 600;
+}
+
+.payment-note {
+  color: #888;
+  font-size: 0.85rem;
+  margin-top: 16px;
+  font-style: italic;
+}
