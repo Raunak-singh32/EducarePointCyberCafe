@@ -8,7 +8,7 @@ const ServicesSection = () => {
     { icon: '🖨️', title: 'Print', desc: 'B&W & Color printing', price: 'B&W ₹2/page | Color ₹5/page' },
     { icon: '📄', title: 'Xerox', desc: 'Fast photocopying', price: '₹1/page' },
     { icon: '📷', title: 'Scan', desc: 'Document scanning', price: '₹5/doc' },
-    { icon: '📎', title: 'Lamination', desc: 'Document protection', price: '₹30+' },
+    { icon: '📎', title: 'Lamination', desc: 'Document protection', price: 'Price varies' },
     { icon: '📚', title: 'Binding', desc: 'Spiral binding', price: '₹50+' },
     { icon: '📝', title: 'Form Fill', desc: 'Online forms', price: '₹50+' },
     { icon: '🎨', title: 'Project Work', desc: 'Charts & models', price: 'Custom' }

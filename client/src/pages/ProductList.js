@@ -4,16 +4,15 @@ import { useReveal } from '../useScrollEffects';
 import { useNavigate } from 'react-router-dom';
 import { productAPI } from '../services/api';
 import { useCart } from '../context/CartContext';
-import { useCompare } from '../context/CompareContext';
 import Testimonials from '../components/Testimonials';
 import ServicesSection from '../components/ServicesSection';
 import ContactSection from '../components/ContactSection';
 import Loading from '../components/Loading';
 
-// ProductCard component with reveal animation
-function ProductCard({ product, onClick, onQuickView, onAddToCart, onCompareToggle, isComparing }) {
+// ProductCard component - COMPARE REMOVED, BUY NOW ADDED
+function ProductCard({ product, onClick, onQuickView, onAddToCart, onBuyNow }) {
   const { ref, className } = useReveal();
-  
+
   return (
     <div 
       ref={ref} 
@@ -48,28 +47,31 @@ function ProductCard({ product, onClick, onQuickView, onAddToCart, onCompareTogg
             </span>
           </div>
         </div>
-        <button 
-          onClick={(e) => { e.stopPropagation(); onAddToCart(product); }}
-          className="add-to-cart-btn"
-          disabled={product.stockStatus === 'out-of-stock'}
-        >
-          {product.stockStatus === 'out-of-stock' ? '⏳ Coming Soon' : '🛒 Add to Cart'}
-        </button>
-        <button 
-          onClick={(e) => { e.stopPropagation(); onCompareToggle(product); }}
-          className={`compare-btn ${isComparing ? 'active' : ''}`}
-        >
-          {isComparing ? '✓ Added to Compare' : '⚖️ Compare'}
-        </button>
+        <div className="product-actions">
+          <button 
+            onClick={(e) => { e.stopPropagation(); onAddToCart(product); }}
+            className="add-to-cart-btn"
+            disabled={product.stockStatus === 'out-of-stock'}
+          >
+            {product.stockStatus === 'out-of-stock' ? '⏳ Coming Soon' : '🛒 Add to Cart'}
+          </button>
+          <button 
+            onClick={(e) => { e.stopPropagation(); onBuyNow(product); }}
+            className="buy-now-btn"
+            disabled={product.stockStatus === 'out-of-stock'}
+          >
+            {product.stockStatus === 'out-of-stock' ? '⏳ Coming Soon' : '⚡ Buy Now'}
+          </button>
+        </div>
       </div>
     </div>
   );
 }
 
-// Featured Product Card with reveal
-function FeaturedCard({ product, onClick, onQuickView, onAddToCart }) {
+// Featured Product Card - COMPARE REMOVED
+function FeaturedCard({ product, onClick, onQuickView, onAddToCart, onBuyNow }) {
   const { ref, className } = useReveal();
-  
+
   return (
     <div 
       ref={ref} 
@@ -98,12 +100,20 @@ function FeaturedCard({ product, onClick, onQuickView, onAddToCart }) {
             {product.isNew && <span className="badge new">✨ New</span>}
           </div>
         </div>
-        <button 
-          onClick={(e) => { e.stopPropagation(); onAddToCart(product); }}
-          className="add-to-cart-btn"
-        >
-          🛒 Add to Cart
-        </button>
+        <div className="product-actions">
+          <button 
+            onClick={(e) => { e.stopPropagation(); onAddToCart(product); }}
+            className="add-to-cart-btn"
+          >
+            🛒 Add to Cart
+          </button>
+          <button 
+            onClick={(e) => { e.stopPropagation(); onBuyNow(product); }}
+            className="buy-now-btn"
+          >
+            ⚡ Buy Now
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -119,7 +129,6 @@ const ProductList = () => {
     const [quickView, setQuickView] = useState(null);
     const navigate = useNavigate();
     const { addToCart } = useCart();
-    const { compareList, addToCompare, removeFromCompare, clearCompare } = useCompare();
     const [showToast, setShowToast] = useState(false);
     const [toastMessage, setToastMessage] = useState('');
 
@@ -135,7 +144,7 @@ const ProductList = () => {
         if (category !== 'all') {
             result = result.filter(p => p.category === category);
         }
-        
+
         switch(sortBy) {
             case 'popular':
                 result = [...result].sort((a, b) => (b.isPopular ? 1 : 0) - (a.isPopular ? 1 : 0));
@@ -155,7 +164,7 @@ const ProductList = () => {
             default:
                 break;
         }
-        
+
         setFiltered(result);
     }, [search, category, sortBy, products]);
 
@@ -166,10 +175,15 @@ const ProductList = () => {
         setTimeout(() => setShowToast(false), 2000);
     };
 
-    const handleCompareToggle = (product) => {
-        compareList.find(p => p._id === product._id) 
-            ? removeFromCompare(product._id) 
-            : addToCompare(product);
+    // NEW: Buy Now - Add to cart and go to checkout
+    const handleBuyNow = (product) => {
+        addToCart(product);
+        setToastMessage(`${product.name} added! Proceeding to checkout...`);
+        setShowToast(true);
+        setTimeout(() => {
+            setShowToast(false);
+            navigate('/cart');
+        }, 1000);
     };
 
     const fetchProducts = async () => {
@@ -228,6 +242,7 @@ const ProductList = () => {
                                     onClick={() => navigate(`/product/${product._id}`)}
                                     onQuickView={setQuickView}
                                     onAddToCart={handleAddToCart}
+                                    onBuyNow={handleBuyNow}
                                 />
                             ))}
                     </div>
@@ -242,14 +257,13 @@ const ProductList = () => {
                         onClick={() => navigate(`/product/${product._id}`)}
                         onQuickView={setQuickView}
                         onAddToCart={handleAddToCart}
-                        onCompareToggle={handleCompareToggle}
-                        isComparing={!!compareList.find(p => p._id === product._id)}
+                        onBuyNow={handleBuyNow}
                     />
                 ))}
             </div>
-            
+
             {filtered.length === 0 && <p className="no-results">No products found</p>}
-            
+
             {quickView &&  createPortal (
                 <div className="quick-view-modal" onClick={() => setQuickView(null)}>
                     <div className="quick-view-content" onClick={(e) => e.stopPropagation()}>
@@ -265,45 +279,29 @@ const ProductList = () => {
                             <span className={`badge ${quickView.stockStatus}`}>
                                 {quickView.stockStatus === 'in-stock' ? 'In Stock' : 'Coming Soon'}
                             </span>
-                            <button onClick={() => { navigate(`/product/${quickView._id}`); setQuickView(null); }} className="view-details-btn">
-                                View Full Details →
-                            </button>
+                            <div className="quick-view-actions">
+                                <button onClick={() => { handleAddToCart(quickView); setQuickView(null); }} className="add-to-cart-btn">
+                                    🛒 Add to Cart
+                                </button>
+                                <button onClick={() => { handleBuyNow(quickView); setQuickView(null); }} className="buy-now-btn">
+                                    ⚡ Buy Now
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>,
                 document.body
             )}
-            
+
             {showToast && (
                 <div className="toast-notification">
                     ✅ {toastMessage}
                 </div>
             )}
-            
+
             <ContactSection />
             <ServicesSection />
             <Testimonials />
-            
-            {/* Compare Bar */}
-            {compareList.length > 0 && (
-                <div className="compare-bar">
-                    <div className="compare-items">
-                        {compareList.map(p => (
-                            <div key={p._id} className="compare-chip">
-                                <img src={p.image} alt={p.name} />
-                                <span>{p.name}</span>
-                                <button onClick={() => removeFromCompare(p._id)}>×</button>
-                            </div>
-                        ))}
-                    </div>
-                    <div className="compare-actions">
-                        <button onClick={() => navigate('/compare')} className="compare-btn-main">
-                            Compare ({compareList.length})
-                        </button>
-                        <button onClick={clearCompare} className="clear-compare-btn">Clear</button>
-                    </div>
-                </div>
-            )}
         </div>
     );
 };

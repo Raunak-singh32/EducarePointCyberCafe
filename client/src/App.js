@@ -66,7 +66,7 @@ function AppContent() {
     />
   </div>
           <h1 className="hero-title">Educare Point Cyber Cafe</h1>
-          <p className="hero-subtitle">Stationery, printing & cyber services — done right.</p>
+          <p className="hero-subtitle">Stationery & printing services — done right.</p>
         </div>
       </section>
 

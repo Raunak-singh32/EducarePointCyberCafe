@@ -93,7 +93,7 @@ const Services = () => {
         serviceType: formData.serviceType,
         printType: formData.printType,
         paperSize: formData.paperSize,
-        pages: Number(formData.pages),
+        // pages: Number(formData.pages),
         copies: Number(formData.copies),
         totalPrice: price,
         customerName: formData.customerName,

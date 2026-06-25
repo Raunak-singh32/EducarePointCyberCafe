@@ -3436,3 +3436,143 @@ select option {
   body { background: white; color: black; }
   .product-card, .service-card { border: 1px solid #ccc; box-shadow: none; }
 }
+
+/* ===== BUY NOW BUTTON - COOL STYLES ===== */
+
+.product-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+  width: 100%;
+}
+
+/* Add to Cart Button - Purple Gradient */
+.add-to-cart-btn {
+  flex: 1;
+  padding: 12px 16px;
+  border: none;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.add-to-cart-btn:hover:not(:disabled) {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.5);
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+}
+
+.add-to-cart-btn:active:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+/* Buy Now Button - Golden/Orange Gradient (stands out!) */
+.buy-now-btn {
+  flex: 1;
+  padding: 12px 16px;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: linear-gradient(135deg, #f5af19 0%, #f12711 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(245, 175, 25, 0.4);
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Shine effect on Buy Now */
+.buy-now-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
+  transition: left 0.5s ease;
+}
+
+.buy-now-btn:hover:not(:disabled)::before {
+  left: 100%;
+}
+
+.buy-now-btn:hover:not(:disabled) {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 8px 30px rgba(245, 175, 25, 0.6);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.buy-now-btn:active:not(:disabled) {
+  transform: translateY(-1px) scale(0.98);
+}
+
+/* Disabled state */
+.add-to-cart-btn:disabled,
+.buy-now-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none;
+}
+
+/* Quick View Actions */
+.quick-view-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.quick-view-actions .add-to-cart-btn,
+.quick-view-actions .buy-now-btn {
+  padding: 14px 20px;
+  font-size: 1rem;
+}
+
+/* Featured Card Buttons */
+.featured-card .product-actions {
+  margin-top: 15px;
+}
+
+.featured-card .add-to-cart-btn,
+.featured-card .buy-now-btn {
+  padding: 14px 18px;
+  font-size: 1rem;
+}
+
+/* Mobile responsive */
+@media (max-width: 480px) {
+  .product-actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .add-to-cart-btn,
+  .buy-now-btn {
+    width: 100%;
+    padding: 14px;
+  }
+}
