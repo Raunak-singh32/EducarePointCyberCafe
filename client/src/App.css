@@ -6,17 +6,17 @@
    ============================================ */
 :root {
   /* ── BRAND COLORS ──────────────────────────────── */
-  --color-blue:         #667eea;
-  --color-accent:       #2f6fed;   /* was --color-magenta */
-  --color-accent-deep:  #0a1e4d;   /* was --color-violet-deep */
-  --color-accent-darker:#060f2a;
-  --gradient-brand:      linear-gradient(135deg, var(--color-blue) 0%, var(--color-accent) 100%);
-  --gradient-brand-flow: linear-gradient(-45deg, var(--color-blue), var(--color-accent), #4a7ee8, var(--color-accent), var(--color-blue));
+  --color-blue:         #ff9a3c;
+  --color-accent:       #ff6b35;
+  --color-accent-deep:  #3d1a00;
+  --color-accent-darker:#1a0a00;
+  --gradient-brand:      linear-gradient(135deg, #ffb347 0%, #ff6b35 100%);
+  --gradient-brand-flow: linear-gradient(-45deg, #ffb347, #ff6b35, #ffd280, #ff6b35, #ffb347);
 
   /* ── SURFACES ──────────────────────────────────── */
-  --bg-void:     #04090f;
-  --bg-base:     #06101e;
-  --bg-elevated: #0d1e40;
+  --bg-void:     #0f0700;
+  --bg-base:     #1a0e04;
+  --bg-elevated: #2a1608;
 
   /* ── TEXT ──────────────────────────────────────── */
   --text-primary:   #f0f4ff;
@@ -32,9 +32,9 @@
   --nav-bg-scrolled: rgba(4,9,15,0.88);
 
   /* ── GLOW & SHADOW ─────────────────────────────── */
-  --glow-blue:       rgba(102,126,234,0.45);
-  --glow-accent:     rgba(47,111,237,0.45);
-  --shadow-premium:  0 20px 50px rgba(47,111,237,0.2);
+  --glow-blue:       rgba(255,154,60,0.45);
+  --glow-accent:     rgba(255,107,53,0.45);
+  --shadow-premium:  0 20px 50px rgba(255,107,53,0.2);
   --shadow-lg:       0 30px 70px rgba(0,0,0,0.50);
   --depth-shadow:    0 1px 0 rgba(255,255,255,0.06) inset, 0 16px 35px rgba(0,0,0,0.45);
   --depth-shadow-soft: 0 1px 0 rgba(255,255,255,0.05) inset, 0 10px 24px rgba(0,0,0,0.35);
@@ -68,7 +68,7 @@ html {
 
 body {
   font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-  background: linear-gradient(135deg, #06090f 0%, #0a1525 45%, #0d1e3a 100%);
+  background: linear-gradient(135deg, #0f0700 0%, #1e0e04 45%, #2a1a08 100%);
   background-size: 200% 200%;
   animation: bodyFlow 40s ease-in-out infinite;
   min-height: 100vh;
@@ -93,10 +93,10 @@ body::before {
   z-index: -3;
   pointer-events: none;
   background:
-    radial-gradient(circle at 15% 20%, var(--color-accent-deep) 0%, transparent 48%),
-    radial-gradient(circle at 85% 15%, var(--color-accent) 0%, transparent 45%),
-    radial-gradient(circle at 80% 80%, var(--color-accent-deep) 0%, transparent 48%),
-    radial-gradient(circle at 10% 85%, var(--color-accent) 0%, transparent 45%);
+    radial-gradient(circle at 15% 20%, rgba(255,107,53,0.35) 0%, transparent 48%),
+    radial-gradient(circle at 85% 15%, rgba(255,180,60,0.25) 0%, transparent 45%),
+    radial-gradient(circle at 80% 80%, rgba(255,107,53,0.35) 0%, transparent 48%),
+    radial-gradient(circle at 10% 85%, rgba(255,180,60,0.25) 0%, transparent 45%);
   background-size: 200% 200%;
   opacity: 0.55;
   animation: ambientDrift 30s ease-in-out infinite;
@@ -2876,20 +2876,20 @@ select option {
   max-width: calc(100% - 32px);
   margin: 0 auto 30px;
   padding: 12px 22px;
-  background: linear-gradient(135deg, rgba(10, 30, 77, 0.55) 0%, rgba(47, 111, 237, 0.35) 100%);
+  background: linear-gradient(135deg, rgba(60, 20, 0, 0.65) 0%, rgba(255, 107, 53, 0.35) 100%);
   backdrop-filter: blur(var(--glass-blur));
   -webkit-backdrop-filter: blur(var(--glass-blur));
   border: 1px solid var(--glass-border);
   border-radius: 999px;
-  box-shadow: var(--depth-shadow), 0 0 40px rgba(47, 111, 237, 0.25);
+  box-shadow: var(--depth-shadow), 0 0 40px rgba(255, 107, 53, 0.3);
   transition: top var(--duration-fast) var(--ease-premium), background var(--duration-fast) ease,
               box-shadow var(--duration-fast) ease, padding var(--duration-fast) ease;
 }
 
 .navbar.scrolled {
   top: 10px;
-  background: linear-gradient(135deg, rgba(10, 30, 77, 0.8) 0%, rgba(47, 111, 237, 0.55) 100%);
- box-shadow: var(--depth-shadow), 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 50px rgba(47, 111, 237, 0.3);
+  background: linear-gradient(135deg, rgba(60, 20, 0, 0.85) 0%, rgba(255, 107, 53, 0.55) 100%);
+box-shadow: var(--depth-shadow), 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 50px rgba(255, 107, 53, 0.35);
   padding-top: 9px;
   padding-bottom: 9px;
 }
@@ -3449,21 +3449,21 @@ select option {
 /* Add to Cart Button - Purple Gradient */
 .add-to-cart-btn {
   flex: 1;
-  padding: 12px 16px;
+  padding: 8px 12px;
   border: none;
-  border-radius: 12px;
-  font-size: 0.95rem;
+  border-radius: 10px;
+  font-size: 0.82rem;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.3s ease;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
-  letter-spacing: 0.5px;
+  box-shadow: 0 3px 10px rgba(102, 126, 234, 0.25);
+  letter-spacing: 0.3px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 4px;
 }
 
 .add-to-cart-btn:hover:not(:disabled) {
@@ -3480,21 +3480,21 @@ select option {
 /* Buy Now Button - Golden/Orange Gradient (stands out!) */
 .buy-now-btn {
   flex: 1;
-  padding: 12px 16px;
+  padding: 8px 12px;
   border: 2px solid transparent;
-  border-radius: 12px;
-  font-size: 0.95rem;
+  border-radius: 10px;
+  font-size: 0.82rem;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.3s ease;
   background: linear-gradient(135deg, #f5af19 0%, #f12711 100%);
   color: white;
-  box-shadow: 0 4px 15px rgba(245, 175, 25, 0.4);
-  letter-spacing: 0.5px;
+  box-shadow: 0 3px 10px rgba(245, 175, 25, 0.35);
+  letter-spacing: 0.3px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 4px;
   position: relative;
   overflow: hidden;
 }
