@@ -515,16 +515,16 @@ body::after {
 .price-box {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  padding: 25px;
-  border-radius: 20px;
+  padding: 5px;
+  border-radius: 5px;
   text-align: center;
   margin: 25px 0;
-  box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 10px 30px rgba(175, 102, 234, 0.3);
 }
 
 .price-box h3 {
-  font-size: 1.8rem;
-  margin-bottom: 8px;
+  font-size: 1.25rem;
+  margin-bottom: 5px;
 }
 
 /* Submit Button */
