@@ -3287,9 +3287,11 @@ white-space: nowrap;
 
 /* ── SMALL PHONES (≤ 480px) ─────────────────────── */
 @media (max-width: 480px) {
-  /* Top padding for fixed navbar; left/right handled by ≤640px block */
+  /* Top padding for fixed navbar + trade licence badge clearance.
+     Navbar bottom ≈ 52px, badge at top:64px is ~28px tall → ends at ~92px.
+     We add enough room so the search bar starts below the badge. */
   .App {
-    padding: 78px 6px 16px;
+    padding: 100px 6px 16px;
   }
 
   /* Hero */
@@ -3660,8 +3662,8 @@ html:has(.navbar.navbar-hidden)::after {
 
 /* ── LARGE PHONES (481–640px) ───────────────────── */
 @media (min-width: 481px) and (max-width: 640px) {
-  /* top padding for navbar; left/right margin from ≤640px block */
-  .App { padding: 85px 10px 14px; }
+  /* Badge at top:70px, ~23px tall → bottom ≈ 93px. Push App below it. */
+  .App { padding: 105px 10px 14px; }
 
   /* Navbar compact but slightly more breathing room than tiny phones */
   .navbar {
