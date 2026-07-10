@@ -117,16 +117,19 @@ export function useScrollTint(max = 0.3) {
  * the .scrolled class on your <nav className="navbar"> with it.
  */
 export function useStickyNav(threshold = 40) {
-  const [scrolled, setScrolled] = useState(false);
+const [navHidden, setNavHidden] = useState(false);
+useEffect(() => {
+  let lastY = window.scrollY;
+  const onScroll = () => {
+    const y = window.scrollY;
+    setNavHidden(y > lastY && y > 60); // hide when scrolling DOWN past 60px
+    lastY = y;
+  };
+  window.addEventListener('scroll', onScroll, { passive: true });
+  return () => window.removeEventListener('scroll', onScroll);
+}, []);
 
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > threshold);
-    onScroll();
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, [threshold]);
-
-  return scrolled;
+  return navHidden;
 }
 
 /**

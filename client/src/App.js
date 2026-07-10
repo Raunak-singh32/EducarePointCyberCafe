@@ -23,7 +23,7 @@ function App() {
 
 function AppContent() {
   const location = useLocation();
-  const scrolled = useStickyNav();
+  const navHidden = useStickyNav();
   useScrollTint();
 
   return (
@@ -43,7 +43,7 @@ function AppContent() {
       </div>
       
       {/* Hero Section */}
-      <section className="hero-section">
+      {/* <section className="hero-section">
         <div className="hero-gradient-bg"></div>
         <div className="floating-shapes">
           <div className="shape shape-circle shape-1"></div>
@@ -68,10 +68,10 @@ function AppContent() {
           <h1 className="hero-title">Educare Point Cyber Cafe</h1>
           <p className="hero-subtitle">Stationery & printing services — done right.</p>
         </div>
-      </section>
+      </section> */}
 
       {/* Sticky Navbar */}
-      <nav className={`navbar ${scrolled ? 'scrolled' : ''}`}>
+      <nav className={`navbar ${navHidden ? 'navbar-hidden' : ''}`}>
         <Navbar />
       </nav>
       
