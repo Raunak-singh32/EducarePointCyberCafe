@@ -79,30 +79,34 @@ const Services = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      let fileUrl = '';
-      
-      if (formData.file) {
-        const uploadData = new FormData();
-        uploadData.append('image', formData.file);
-        const uploadRes = await uploadAPI.uploadFile(uploadData);
-        fileUrl = uploadRes.data.fileUrl;
-      }
-      
-      const price = calculatePrice();
-      const orderData = {
-        serviceType: formData.serviceType,
-        printType: formData.printType,
-        paperSize: formData.paperSize,
-        // pages: Number(formData.pages),
-        copies: Number(formData.copies),
-        totalPrice: price,
-        customerName: formData.customerName,
-        customerPhone: formData.customerPhone,
-        pickupTime: formData.pickupTime,
-        notes: formData.notes,
-        fileUrl: fileUrl,
-       items: selectedItems.map(i => ({ itemId: i._id, name: i.name, price: i.price, quantity: 1 }))
-      };
+      // REPLACE WITH THIS:
+let fileUrl = '';
+let fileName = '';
+
+if (formData.file) {
+  const uploadData = new FormData();
+  uploadData.append('image', formData.file);
+  const uploadRes = await uploadAPI.uploadFile(uploadData);
+  fileUrl = uploadRes.data.fileUrl;
+  fileName = uploadRes.data.fileName || formData.file.name; // ✅ save original filename
+}
+
+const price = calculatePrice();
+const orderData = {
+  serviceType: formData.serviceType,
+  printType: formData.printType,
+  paperSize: formData.paperSize,
+  pages: Number(formData.pages),
+  copies: Number(formData.copies),
+  totalPrice: price,
+  customerName: formData.customerName,
+  customerPhone: formData.customerPhone,
+  pickupTime: formData.pickupTime,
+  notes: formData.notes,
+  fileUrl: fileUrl,
+  fileName: fileName, // ✅ NEW - saves original filename to order
+  items: selectedItems.map(i => ({ itemId: i._id, name: i.name, price: i.price, quantity: 1 }))
+};
       
       const res = await orderAPI.create(orderData);
       setOrderId(res.data.order._id);

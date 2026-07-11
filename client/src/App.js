@@ -10,13 +10,17 @@ import Cart from './pages/Cart';
 import ScrollToTop from './components/ScrollToTop';
 import ProductDetail from './pages/ProductDetail';
 import Compare from './pages/Compare';
+import Login from './pages/Login';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { useScrollTint, useStickyNav } from './useScrollEffects';
 import './App.css';
 
 function App() {
   return (
     <Router>
-      <AppContent />
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
     </Router>
   );
 }
@@ -28,54 +32,23 @@ function AppContent() {
 
   return (
     <div className="App">
-      {/* Scroll tint overlay */}
       <div className="bg-slideshow">
-  <div className="bg-slide bg-slide-1"></div>
-  <div className="bg-slide bg-slide-2"></div>
-  <div className="bg-slide bg-slide-3"></div>
-  <div className="bg-slide bg-slide-4"></div>
-  <div className="bg-slide bg-slide-5"></div>
-  <div className="bg-slide bg-slide-6"></div>
-  <div className="bg-slide bg-slide-7"></div>
-  <div className="bg-slide bg-slide-8"></div>
-</div>
-      <div className="scroll-tint-overlay">
+        <div className="bg-slide bg-slide-1"></div>
+        <div className="bg-slide bg-slide-2"></div>
+        <div className="bg-slide bg-slide-3"></div>
+        <div className="bg-slide bg-slide-4"></div>
+        <div className="bg-slide bg-slide-5"></div>
+        <div className="bg-slide bg-slide-6"></div>
+        <div className="bg-slide bg-slide-7"></div>
+        <div className="bg-slide bg-slide-8"></div>
       </div>
-      
-      {/* Hero Section */}
-      {/* <section className="hero-section">
-        <div className="hero-gradient-bg"></div>
-        <div className="floating-shapes">
-          <div className="shape shape-circle shape-1"></div>
-          <div className="shape shape-square shape-2"></div>
-          <div className="shape shape-circle shape-3"></div>
-          <div className="shape shape-triangle shape-4"></div>
-          <div className="shape shape-square shape-5"></div>
-        </div>
-        <div className="particle-network">
-          {[...Array(12)].map((_, i) => (
-            <span key={i} className={`particle-dot dot-${i + 1}`}></span>
-          ))}
-        </div>
-        <div className="hero-content">
-           <div className="hero-logo">
-    <img 
-      src="/wheel-rotating.gif" 
-      alt="Educare Point" 
-      className="hero-wheel"
-    />
-  </div>
-          <h1 className="hero-title">Educare Point Cyber Cafe</h1>
-          <p className="hero-subtitle">Stationery & printing services — done right.</p>
-        </div>
-      </section> */}
 
-      {/* Sticky Navbar */}
+      <div className="scroll-tint-overlay"></div>
+
       <nav className={`navbar ${navHidden ? 'navbar-hidden' : ''}`}>
         <Navbar />
       </nav>
-      
-      {/* Page transitions */}
+
       <div className="page-fade-wrapper" key={location.pathname}>
         <main>
           <Routes>
@@ -87,18 +60,19 @@ function AppContent() {
             <Route path="/cart" element={<Cart />} />
             <Route path="/product/:id" element={<ProductDetail />} />
             <Route path="/compare" element={<Compare />} />
+            <Route path="/login" element={<Login />} />
           </Routes>
         </main>
       </div>
-      
+
       <footer className="app-footer">
         <p>© 2026 Educare Point Cyber Cafe</p>
       </footer>
-      
-      <a 
-        href="https://wa.me/919331443939?text=Hi%20Educare%20Point,%20I%20have%20a%20question" 
-        className="whatsapp-float" 
-        target="_blank" 
+
+      <a
+        href="https://wa.me/919331443939?text=Hi%20Educare%20Point,%20I%20have%20a%20question"
+        className="whatsapp-float"
+        target="_blank"
         rel="noreferrer"
       >
         💬
@@ -111,19 +85,44 @@ function AppContent() {
 function Navbar() {
   const navigate = useNavigate();
   const { cart } = useCart();
-  
+  const { user, logout } = useAuth();
+
+  const handleUserClick = () => {
+    if (user) {
+      if (window.confirm(`Logout from ${user.name}?`)) {
+        logout();
+      }
+    } else {
+      navigate('/login');
+    }
+  };
+
   return (
     <div className="nav-buttons">
-      {/* Logo + Brand Name */}
       <div className="nav-brand" onClick={() => navigate('/')}>
-        <img 
-          src="/wheel-rotating.gif" 
-          alt="Educare Point" 
+        <img
+          src="/wheel-rotating.gif"
+          alt="Educare Point"
           className="nav-logo"
         />
         <span className="nav-brand-text">Educare Point</span>
       </div>
-      
+
+      {/* 👤 Login Icon */}
+      <button
+        className="nav-login-icon-btn"
+        onClick={handleUserClick}
+        title={user ? `Logged in as ${user.name}` : 'Login / Sign Up'}
+      >
+        {user ? (
+          <span className="nav-user-initial">
+            {user.name.charAt(0).toUpperCase()}
+          </span>
+        ) : (
+          <span className="nav-user-icon">👤</span>
+        )}
+      </button>
+
       <button onClick={() => navigate('/')}>📦 Products</button>
       <button onClick={() => navigate('/services')}>🖨️ Services</button>
       <button onClick={() => navigate('/my-orders')}>📋 My Orders</button>

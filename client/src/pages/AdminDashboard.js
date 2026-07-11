@@ -14,7 +14,7 @@ const AdminDashboard = () => {
   const [formData, setFormData] = useState({
     name: '', category: 'pens', price: '', quantity: '', description: '', image: '', isPopular: false, isNew: false
   });
-  
+
   const fetchProducts = async () => {
     try {
       const res = await productAPI.getAll();
@@ -37,37 +37,37 @@ const AdminDashboard = () => {
     try {
       const res = await orderAPI.getAll();
       const newOrders = res.data.orders;
-      
+
       if (newOrders.length > orders.length && orders.length > 0) {
         const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
         audio.play().catch(e => console.log('Audio blocked'));
       }
-      
+
       setOrders(newOrders);
     } catch (err) {
       console.error(err);
     }
   };
+
   useEffect(() => {
-  if (!localStorage.getItem('adminToken')) {
-    navigate('/admin-login');
-    return;
-  }
+    if (!localStorage.getItem('adminToken')) {
+      navigate('/admin-login');
+      return;
+    }
 
-  fetchProducts();
-  fetchOrders();
-  fetchEarnings();
+    fetchProducts();
+    fetchOrders();
+    fetchEarnings();
 
-  const interval = setInterval(fetchOrders, 30000);
-  const earningsInterval = setInterval(fetchEarnings, 60000);
+    const interval = setInterval(fetchOrders, 30000);
+    const earningsInterval = setInterval(fetchEarnings, 60000);
 
-  return () => {
-    clearInterval(interval);
-    clearInterval(earningsInterval);
-  };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-}, [navigate]);
-
+    return () => {
+      clearInterval(interval);
+      clearInterval(earningsInterval);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -113,18 +113,18 @@ const AdminDashboard = () => {
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    
+
     const reader = new FileReader();
     reader.onloadend = () => {
       setImagePreview(reader.result);
     };
     reader.readAsDataURL(file);
-    
+
     try {
       const uploadData = new FormData();
       uploadData.append('image', file);
       const res = await uploadAPI.uploadFile(uploadData);
-      setFormData({...formData, image: res.data.fileUrl});
+      setFormData({ ...formData, image: res.data.fileUrl });
       setImagePreview('');
     } catch (err) {
       alert('Error uploading image');
@@ -139,6 +139,22 @@ const AdminDashboard = () => {
     } catch (err) {
       alert('Error updating order');
     }
+  };
+
+  // ✅ NEW: Force download function using Cloudinary fl_attachment flag
+  const handleDownloadFile = (fileUrl, fileName) => {
+    // Add fl_attachment to force browser download instead of opening inline
+    const downloadUrl = fileUrl.includes('/upload/')
+      ? fileUrl.replace('/upload/', '/upload/fl_attachment/')
+      : fileUrl;
+
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.setAttribute('download', fileName || 'order-file');
+    link.setAttribute('target', '_blank');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const logout = () => {
@@ -189,24 +205,29 @@ const AdminDashboard = () => {
 
       {activeTab === 'products' && (
         <>
-          <button onClick={() => { setShowForm(true); setEditingId(null); setFormData({ name: '', category: 'pens', price: '', quantity: '', description: '', image: '', isPopular: false, isNew: false }); setImagePreview(''); }} className="add-btn">
+          <button onClick={() => {
+            setShowForm(true);
+            setEditingId(null);
+            setFormData({ name: '', category: 'pens', price: '', quantity: '', description: '', image: '', isPopular: false, isNew: false });
+            setImagePreview('');
+          }} className="add-btn">
             + Add Product
           </button>
 
           {showForm && (
             <form onSubmit={handleSubmit} className="admin-form">
               <h3>{editingId ? '✏️ Edit Product' : '➕ Add New Product'}</h3>
-              
+
               <div className="form-row">
-                <input 
-                  placeholder="Product Name" 
-                  value={formData.name} 
-                  onChange={e => setFormData({...formData, name: e.target.value})} 
-                  required 
+                <input
+                  placeholder="Product Name"
+                  value={formData.name}
+                  onChange={e => setFormData({ ...formData, name: e.target.value })}
+                  required
                 />
-                <select 
-                  value={formData.category} 
-                  onChange={e => setFormData({...formData, category: e.target.value})}
+                <select
+                  value={formData.category}
+                  onChange={e => setFormData({ ...formData, category: e.target.value })}
                 >
                   <option value="pens">Pens</option>
                   <option value="paper">Paper</option>
@@ -215,68 +236,68 @@ const AdminDashboard = () => {
                   <option value="stationery">Stationery</option>
                 </select>
               </div>
-              
+
               <div className="form-row">
-                <input 
-                  type="number" 
-                  placeholder="Price ₹" 
-                  value={formData.price} 
-                  onChange={e => setFormData({...formData, price: e.target.value})} 
-                  required 
+                <input
+                  type="number"
+                  placeholder="Price ₹"
+                  value={formData.price}
+                  onChange={e => setFormData({ ...formData, price: e.target.value })}
+                  required
                 />
-                <input 
-                  type="number" 
-                  placeholder="Quantity" 
-                  value={formData.quantity} 
-                  onChange={e => setFormData({...formData, quantity: e.target.value})} 
-                  required 
+                <input
+                  type="number"
+                  placeholder="Quantity"
+                  value={formData.quantity}
+                  onChange={e => setFormData({ ...formData, quantity: e.target.value })}
+                  required
                 />
               </div>
-              
-              <input 
-                placeholder="Description" 
-                value={formData.description} 
-                onChange={e => setFormData({...formData, description: e.target.value})} 
-                style={{marginBottom: '20px'}}
+
+              <input
+                placeholder="Description"
+                value={formData.description}
+                onChange={e => setFormData({ ...formData, description: e.target.value })}
+                style={{ marginBottom: '20px' }}
               />
-              
-              <div style={{marginBottom: '20px'}}>
-                <label style={{display: 'block', marginBottom: '10px', color: '#667eea', fontWeight: '600'}}>
+
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{ display: 'block', marginBottom: '10px', color: '#667eea', fontWeight: '600' }}>
                   📸 Product Image:
                 </label>
-                
-                <input 
+
+                <input
                   type="file"
                   accept="image/*"
                   onChange={handleImageUpload}
-                  style={{marginBottom: '10px', padding: '10px', background: 'rgba(255,255,255,0.05)', borderRadius: '10px'}}
+                  style={{ marginBottom: '10px', padding: '10px', background: 'rgba(255,255,255,0.05)', borderRadius: '10px' }}
                 />
-                
-                <p style={{textAlign: 'center', color: '#888', margin: '10px 0'}}>— OR —</p>
-                
-                <input 
-                  placeholder="Paste image URL from Google" 
-                  value={formData.image || ''} 
-                  onChange={e => setFormData({...formData, image: e.target.value})}
+
+                <p style={{ textAlign: 'center', color: '#888', margin: '10px 0' }}>— OR —</p>
+
+                <input
+                  placeholder="Paste image URL from Google"
+                  value={formData.image || ''}
+                  onChange={e => setFormData({ ...formData, image: e.target.value })}
                 />
-                
+
                 {(imagePreview || formData.image) && (
-                  <div style={{marginTop: '15px', textAlign: 'center'}}>
-                    <img 
-                      src={imagePreview || formData.image} 
-                      alt="Preview" 
-                      style={{maxWidth: '200px', maxHeight: '200px', borderRadius: '15px', border: '2px solid rgba(102, 126, 234, 0.5)'}}
+                  <div style={{ marginTop: '15px', textAlign: 'center' }}>
+                    <img
+                      src={imagePreview || formData.image}
+                      alt="Preview"
+                      style={{ maxWidth: '200px', maxHeight: '200px', borderRadius: '15px', border: '2px solid rgba(102, 126, 234, 0.5)' }}
                     />
                   </div>
                 )}
               </div>
-              
+
               <div className="checkbox-group">
                 <label>
                   <input
                     type="checkbox"
                     checked={formData.isPopular || false}
-                    onChange={e => setFormData({...formData, isPopular: e.target.checked})}
+                    onChange={e => setFormData({ ...formData, isPopular: e.target.checked })}
                   />
                   <span>🔥 Popular</span>
                 </label>
@@ -284,12 +305,12 @@ const AdminDashboard = () => {
                   <input
                     type="checkbox"
                     checked={formData.isNew || false}
-                    onChange={e => setFormData({...formData, isNew: e.target.checked})}
+                    onChange={e => setFormData({ ...formData, isNew: e.target.checked })}
                   />
                   <span>✨ New</span>
                 </label>
               </div>
-              
+
               <div className="form-buttons">
                 <button type="submit" className="save-btn">💾 Save Product</button>
                 <button type="button" onClick={() => { setShowForm(false); setImagePreview(''); }} className="cancel-btn">❌ Cancel</button>
@@ -333,25 +354,31 @@ const AdminDashboard = () => {
                 </div>
                 <div className="order-details">
                   <p><strong>Service:</strong> {order.serviceType}</p>
-                    {order.items && order.items.length > 0 && (
-    <div className="order-items">
-      <p><strong>Items:</strong></p>
-      {order.items.map((item, idx) => (
-        <p key={idx}>• {item.name} × {item.quantity} = ₹{item.price * item.quantity}</p>
-      ))}
-    </div>
-  )}
+                  {order.items && order.items.length > 0 && (
+                    <div className="order-items">
+                      <p><strong>Items:</strong></p>
+                      {order.items.map((item, idx) => (
+                        <p key={idx}>• {item.name} × {item.quantity} = ₹{item.price * item.quantity}</p>
+                      ))}
+                    </div>
+                  )}
                   <p><strong>Customer:</strong> {order.customerName} ({order.customerPhone})</p>
                   <p><strong>Pickup:</strong> {order.pickupTime}</p>
                   <p><strong>Amount:</strong> ₹{order.totalPrice}</p>
                   {order.pages > 1 && <p><strong>Pages:</strong> {order.pages} × {order.copies} copies</p>}
                   {order.notes && <p><strong>Notes:</strong> {order.notes}</p>}
+
+                  {/* ✅ FIXED: Force download using handleDownloadFile instead of <a href> */}
                   {order.fileUrl && (
                     <p>
-                      <strong>📎 File:</strong> 
-                      <a href={order.fileUrl} target="_blank" rel="noreferrer" className="file-link">
-                        Download File
-                      </a>
+                      <strong>📎 File:</strong>{' '}
+                      <button
+                        onClick={() => handleDownloadFile(order.fileUrl, order.fileName)}
+                        className="file-link"
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                      >
+                        📥 Download File {order.fileName ? `(${order.fileName})` : ''}
+                      </button>
                     </p>
                   )}
                 </div>

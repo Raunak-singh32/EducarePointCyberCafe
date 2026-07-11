@@ -11,7 +11,6 @@ const allowedOrigins = [
     'https://educare-point-cyber-cafe.vercel.app',
     'http://localhost:3000',
     'http://localhost:5173',
-    //   'http://localhost:3000'
 ];
 
 const corsOptions = {
@@ -31,11 +30,10 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-
 // ========== BODY PARSERS ==========
 app.use(express.json());
 
-// ========== STATIC FILES (for old uploads if any) ==========
+// ========== STATIC FILES ==========
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // ========== DATABASE CONNECTION ==========
@@ -46,14 +44,15 @@ mongoose.connect(process.env.MONGODB_URI)
         process.exit(1);
     });
 
-// ========== ROUTES (ONLY ONCE EACH) ==========
+// ========== ROUTES ==========
 app.use('/api/products', require('./routes/products'));
 app.use('/api/orders', require('./routes/orders'));
 app.use('/api/upload', require('./routes/upload'));
+app.use('/api/auth', require('./routes/auth').router);   // ← NEW
 
 // ========== TEST ROUTES ==========
 app.get('/', (req, res) => {
-    res.json({ 
+    res.json({
         message: 'Educare Point API Running',
         status: 'active',
         timestamp: new Date().toISOString()
@@ -73,17 +72,17 @@ app.get('/health', (req, res) => {
 // ========== ERROR HANDLING ==========
 app.use((err, req, res, next) => {
     console.error('Error:', err.stack);
-    res.status(500).json({ 
-        success: false, 
+    res.status(500).json({
+        success: false,
         message: 'Something went wrong!',
         error: process.env.NODE_ENV === 'development' ? err.message : undefined
     });
 });
 
 app.use((req, res) => {
-    res.status(404).json({ 
-        success: false, 
-        message: 'Route not found' 
+    res.status(404).json({
+        success: false,
+        message: 'Route not found'
     });
 });
 
