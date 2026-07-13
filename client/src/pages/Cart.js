@@ -49,16 +49,16 @@ const Cart = () => {
 
       setOrderTotal(total);
 
-      await orderAPI.create({
-        serviceType: 'product-order',
-        items: orderItems,
-        totalPrice: Number(total),
-        customerName: orderData.customerName,
-        customerPhone: orderData.customerPhone,
-        pickupTime: orderData.deliveryType === 'delivery' ? 'Home Delivery' : orderData.pickupTime,
-        deliveryType: orderData.deliveryType,
-        address: orderData.deliveryType === 'delivery' ? orderData.address : ''
-      });
+     await orderAPI.create({
+  serviceType: 'product-order',
+  items: orderItems,
+  totalPrice: Number(total),
+  customerName: orderData.customerName,
+  customerPhone: orderData.customerPhone,
+  pickupTime: orderData.deliveryType === 'delivery' ? 'Home Delivery' : orderData.pickupTime,
+  deliveryType: orderData.deliveryType || 'pickup',
+  address: orderData.address || ''
+});
 
       setOrderPlaced(true);
       clearCart();

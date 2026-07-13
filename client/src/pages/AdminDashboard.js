@@ -217,13 +217,13 @@ const AdminDashboard = () => {
                     </div>
                   )}
                   <p><strong>Customer:</strong> {order.customerName} ({order.customerPhone})</p>
-                  <p><strong>Type:</strong> {order.deliveryType === 'delivery' ? '🚚 Home Delivery' : '🏪 Pickup'}</p>
-                   {order.deliveryType === 'delivery' && order.address && (
-                   <p><strong>📍 Delivery Address:</strong> {order.address}</p>
-                       )}
+                 <p><strong>Type:</strong> {order.deliveryType === 'delivery' ? '🚚 Home Delivery' : '🏪 Pickup'}</p>
+                  {order.deliveryType === 'delivery' && order.address && (
+                      <p><strong>📍 Delivery Address:</strong> {order.address}</p>
+                        )}
                       {order.deliveryType !== 'delivery' && (
-                      <p><strong>⏰ Pickup Time:</strong> {order.pickupTime}</p>
-                 )}
+               <p><strong>⏰ Pickup Time:</strong> {order.pickupTime}</p>
+                          )}
                   <p><strong>Amount:</strong> ₹{order.totalPrice}</p>
                   {order.pages > 1 && <p><strong>Pages:</strong> {order.pages} × {order.copies} copies</p>}
                   {order.notes && <p><strong>Notes:</strong> {order.notes}</p>}
