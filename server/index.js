@@ -63,6 +63,7 @@ mongoose.connect(process.env.MONGODB_URI)
 app.use('/api/products', require('./routes/products'));
 app.use('/api/orders', require('./routes/orders'));
 app.use('/api/upload', require('./routes/upload'));
+app.use('/api/download', require('./routes/download')); // ✅ PDF download proxy
 app.use('/api/auth', require('./routes/auth').router);
 
 // ========== TEST ROUTES ==========
