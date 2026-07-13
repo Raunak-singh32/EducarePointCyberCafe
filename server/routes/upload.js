@@ -10,7 +10,7 @@ const storage = multer.memoryStorage();
 const upload = multer({
   storage,
   limits: {
-    fileSize: 10 * 1024 * 1024
+    fileSize: 50 * 1024 * 1024  // ✅ FIXED: was 10MB, now 50MB for multi-page PDFs
   }
 });
 

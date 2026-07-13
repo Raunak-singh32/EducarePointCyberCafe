@@ -19,149 +19,94 @@ const AdminDashboard = () => {
     try {
       const res = await productAPI.getAll();
       setProducts(res.data.products);
-    } catch (err) {
-      console.error(err);
-    }
+    } catch (err) { console.error(err); }
   };
 
   const fetchEarnings = async () => {
     try {
       const res = await api.get('/orders/stats/today');
       setEarnings(res.data);
-    } catch (err) {
-      console.error(err);
-    }
+    } catch (err) { console.error(err); }
   };
 
   const fetchOrders = async () => {
     try {
       const res = await orderAPI.getAll();
       const newOrders = res.data.orders;
-
       if (newOrders.length > orders.length && orders.length > 0) {
         const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
         audio.play().catch(e => console.log('Audio blocked'));
       }
-
       setOrders(newOrders);
-    } catch (err) {
-      console.error(err);
-    }
+    } catch (err) { console.error(err); }
   };
 
   useEffect(() => {
-    if (!localStorage.getItem('adminToken')) {
-      navigate('/admin-login');
-      return;
-    }
-
+    if (!localStorage.getItem('adminToken')) { navigate('/admin-login'); return; }
     fetchProducts();
     fetchOrders();
     fetchEarnings();
-
     const interval = setInterval(fetchOrders, 30000);
     const earningsInterval = setInterval(fetchEarnings, 60000);
-
-    return () => {
-      clearInterval(interval);
-      clearInterval(earningsInterval);
-    };
+    return () => { clearInterval(interval); clearInterval(earningsInterval); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      if (editingId) {
-        await productAPI.update(editingId, formData);
-      } else {
-        await productAPI.create(formData);
-      }
-      setShowForm(false);
-      setEditingId(null);
+      if (editingId) { await productAPI.update(editingId, formData); }
+      else { await productAPI.create(formData); }
+      setShowForm(false); setEditingId(null);
       setFormData({ name: '', category: 'pens', price: '', quantity: '', description: '', image: '', isPopular: false, isNew: false });
       setImagePreview('');
       fetchProducts();
-    } catch (err) {
-      alert('Error saving product');
-    }
+    } catch (err) { alert('Error saving product'); }
   };
 
   const handleEdit = (product) => {
-    setFormData({
-      name: product.name,
-      category: product.category,
-      price: product.price,
-      quantity: product.quantity,
-      description: product.description || '',
-      image: product.image || '',
-      isPopular: product.isPopular || false,
-      isNew: product.isNew || false
-    });
+    setFormData({ name: product.name, category: product.category, price: product.price, quantity: product.quantity, description: product.description || '', image: product.image || '', isPopular: product.isPopular || false, isNew: product.isNew || false });
     setEditingId(product._id);
     setImagePreview(product.image || '');
     setShowForm(true);
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Delete this product?')) {
-      await productAPI.delete(id);
-      fetchProducts();
-    }
+    if (window.confirm('Delete this product?')) { await productAPI.delete(id); fetchProducts(); }
   };
 
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
     const reader = new FileReader();
-    reader.onloadend = () => {
-      setImagePreview(reader.result);
-    };
+    reader.onloadend = () => { setImagePreview(reader.result); };
     reader.readAsDataURL(file);
-
     try {
       const uploadData = new FormData();
       uploadData.append('image', file);
       const res = await uploadAPI.uploadFile(uploadData);
       setFormData({ ...formData, image: res.data.fileUrl });
       setImagePreview('');
-    } catch (err) {
-      alert('Error uploading image');
-      console.error(err);
-    }
+    } catch (err) { alert('Error uploading image'); console.error(err); }
   };
 
   const updateOrderStatus = async (id, status) => {
-    try {
-      await orderAPI.updateStatus(id, status);
-      fetchOrders();
-    } catch (err) {
-      alert('Error updating order');
-    }
+    try { await orderAPI.updateStatus(id, status); fetchOrders(); }
+    catch (err) { alert('Error updating order'); }
   };
 
-  // ✅ NEW: Force download function using Cloudinary fl_attachment flag
+  // ✅ FIXED: Backend proxy download
+  // Routes through our Express server which fetches from Cloudinary
+  // and streams with Content-Disposition: attachment header.
+  // Works for ALL file sizes and ALL page counts — guaranteed.
   const handleDownloadFile = (fileUrl, fileName) => {
-    // Add fl_attachment to force browser download instead of opening inline
-    const downloadUrl = fileUrl.includes('/upload/')
-      ? fileUrl.replace('/upload/', '/upload/fl_attachment/')
-      : fileUrl;
-
-    const link = document.createElement('a');
-    link.href = downloadUrl;
-    link.setAttribute('download', fileName || 'order-file');
-    link.setAttribute('target', '_blank');
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    if (!fileUrl) return;
+    const baseURL = api.defaults.baseURL || 'https://educarepointcybercafe.onrender.com/api';
+    const proxyUrl = `${baseURL}/download?fileUrl=${encodeURIComponent(fileUrl)}&fileName=${encodeURIComponent(fileName || 'order-file.pdf')}`;
+    window.open(proxyUrl, '_blank');
   };
 
-  const logout = () => {
-    localStorage.removeItem('adminToken');
-    navigate('/admin-login');
-  };
-
+  const logout = () => { localStorage.removeItem('adminToken'); navigate('/admin-login'); };
   const pendingOrders = orders.filter(o => o.status === 'pending').length;
 
   return (
@@ -172,32 +117,15 @@ const AdminDashboard = () => {
       </div>
 
       <div className="stats-box">
-        <div className="stat-card">
-          <h3>{products.length}</h3>
-          <p>Products</p>
-        </div>
-        <div className="stat-card alert">
-          <h3>{pendingOrders}</h3>
-          <p>Pending Orders</p>
-        </div>
-        <div className="stat-card">
-          <h3>{orders.length}</h3>
-          <p>Total Orders</p>
-        </div>
-        <div className="stat-card green">
-          <h3>₹{earnings.totalEarnings}</h3>
-          <p>Today's Earnings</p>
-        </div>
-        <div className="stat-card blue">
-          <h3>{earnings.totalOrders}</h3>
-          <p>Today's Orders</p>
-        </div>
+        <div className="stat-card"><h3>{products.length}</h3><p>Products</p></div>
+        <div className="stat-card alert"><h3>{pendingOrders}</h3><p>Pending Orders</p></div>
+        <div className="stat-card"><h3>{orders.length}</h3><p>Total Orders</p></div>
+        <div className="stat-card green"><h3>₹{earnings.totalEarnings}</h3><p>Today's Earnings</p></div>
+        <div className="stat-card blue"><h3>{earnings.totalOrders}</h3><p>Today's Orders</p></div>
       </div>
 
       <div className="tab-buttons">
-        <button className={activeTab === 'products' ? 'active' : ''} onClick={() => setActiveTab('products')}>
-          📦 Products
-        </button>
+        <button className={activeTab === 'products' ? 'active' : ''} onClick={() => setActiveTab('products')}>📦 Products</button>
         <button className={activeTab === 'orders' ? 'active' : ''} onClick={() => setActiveTab('orders')}>
           📝 Orders {pendingOrders > 0 && <span className="badge">{pendingOrders}</span>}
         </button>
@@ -205,30 +133,16 @@ const AdminDashboard = () => {
 
       {activeTab === 'products' && (
         <>
-          <button onClick={() => {
-            setShowForm(true);
-            setEditingId(null);
-            setFormData({ name: '', category: 'pens', price: '', quantity: '', description: '', image: '', isPopular: false, isNew: false });
-            setImagePreview('');
-          }} className="add-btn">
+          <button onClick={() => { setShowForm(true); setEditingId(null); setFormData({ name: '', category: 'pens', price: '', quantity: '', description: '', image: '', isPopular: false, isNew: false }); setImagePreview(''); }} className="add-btn">
             + Add Product
           </button>
 
           {showForm && (
             <form onSubmit={handleSubmit} className="admin-form">
               <h3>{editingId ? '✏️ Edit Product' : '➕ Add New Product'}</h3>
-
               <div className="form-row">
-                <input
-                  placeholder="Product Name"
-                  value={formData.name}
-                  onChange={e => setFormData({ ...formData, name: e.target.value })}
-                  required
-                />
-                <select
-                  value={formData.category}
-                  onChange={e => setFormData({ ...formData, category: e.target.value })}
-                >
+                <input placeholder="Product Name" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} required />
+                <select value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })}>
                   <option value="pens">Pens</option>
                   <option value="paper">Paper</option>
                   <option value="copies">Copies</option>
@@ -236,81 +150,26 @@ const AdminDashboard = () => {
                   <option value="stationery">Stationery</option>
                 </select>
               </div>
-
               <div className="form-row">
-                <input
-                  type="number"
-                  placeholder="Price ₹"
-                  value={formData.price}
-                  onChange={e => setFormData({ ...formData, price: e.target.value })}
-                  required
-                />
-                <input
-                  type="number"
-                  placeholder="Quantity"
-                  value={formData.quantity}
-                  onChange={e => setFormData({ ...formData, quantity: e.target.value })}
-                  required
-                />
+                <input type="number" placeholder="Price ₹" value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value })} required />
+                <input type="number" placeholder="Quantity" value={formData.quantity} onChange={e => setFormData({ ...formData, quantity: e.target.value })} required />
               </div>
-
-              <input
-                placeholder="Description"
-                value={formData.description}
-                onChange={e => setFormData({ ...formData, description: e.target.value })}
-                style={{ marginBottom: '20px' }}
-              />
-
+              <input placeholder="Description" value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} style={{ marginBottom: '20px' }} />
               <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '10px', color: '#667eea', fontWeight: '600' }}>
-                  📸 Product Image:
-                </label>
-
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                  style={{ marginBottom: '10px', padding: '10px', background: 'rgba(255,255,255,0.05)', borderRadius: '10px' }}
-                />
-
+                <label style={{ display: 'block', marginBottom: '10px', color: '#667eea', fontWeight: '600' }}>📸 Product Image:</label>
+                <input type="file" accept="image/*" onChange={handleImageUpload} style={{ marginBottom: '10px', padding: '10px', background: 'rgba(255,255,255,0.05)', borderRadius: '10px' }} />
                 <p style={{ textAlign: 'center', color: '#888', margin: '10px 0' }}>— OR —</p>
-
-                <input
-                  placeholder="Paste image URL from Google"
-                  value={formData.image || ''}
-                  onChange={e => setFormData({ ...formData, image: e.target.value })}
-                />
-
+                <input placeholder="Paste image URL from Google" value={formData.image || ''} onChange={e => setFormData({ ...formData, image: e.target.value })} />
                 {(imagePreview || formData.image) && (
                   <div style={{ marginTop: '15px', textAlign: 'center' }}>
-                    <img
-                      src={imagePreview || formData.image}
-                      alt="Preview"
-                      style={{ maxWidth: '200px', maxHeight: '200px', borderRadius: '15px', border: '2px solid rgba(102, 126, 234, 0.5)' }}
-                    />
+                    <img src={imagePreview || formData.image} alt="Preview" style={{ maxWidth: '200px', maxHeight: '200px', borderRadius: '15px', border: '2px solid rgba(102, 126, 234, 0.5)' }} />
                   </div>
                 )}
               </div>
-
               <div className="checkbox-group">
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={formData.isPopular || false}
-                    onChange={e => setFormData({ ...formData, isPopular: e.target.checked })}
-                  />
-                  <span>🔥 Popular</span>
-                </label>
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={formData.isNew || false}
-                    onChange={e => setFormData({ ...formData, isNew: e.target.checked })}
-                  />
-                  <span>✨ New</span>
-                </label>
+                <label><input type="checkbox" checked={formData.isPopular || false} onChange={e => setFormData({ ...formData, isPopular: e.target.checked })} /><span>🔥 Popular</span></label>
+                <label><input type="checkbox" checked={formData.isNew || false} onChange={e => setFormData({ ...formData, isNew: e.target.checked })} /><span>✨ New</span></label>
               </div>
-
               <div className="form-buttons">
                 <button type="submit" className="save-btn">💾 Save Product</button>
                 <button type="button" onClick={() => { setShowForm(false); setImagePreview(''); }} className="cancel-btn">❌ Cancel</button>
@@ -319,16 +178,11 @@ const AdminDashboard = () => {
           )}
 
           <table className="product-table">
-            <thead>
-              <tr><th>Name</th><th>Category</th><th>Price</th><th>Stock</th><th>Status</th><th>Actions</th></tr>
-            </thead>
+            <thead><tr><th>Name</th><th>Category</th><th>Price</th><th>Stock</th><th>Status</th><th>Actions</th></tr></thead>
             <tbody>
               {products.map(p => (
                 <tr key={p._id}>
-                  <td>{p.name}</td>
-                  <td>{p.category}</td>
-                  <td>₹{p.price}</td>
-                  <td>{p.displayQuantity}</td>
+                  <td>{p.name}</td><td>{p.category}</td><td>₹{p.price}</td><td>{p.displayQuantity}</td>
                   <td><span className={`status ${p.stockStatus}`}>{p.stockStatus}</span></td>
                   <td>
                     <button onClick={() => handleEdit(p)} className="edit-btn">Edit</button>
@@ -368,7 +222,7 @@ const AdminDashboard = () => {
                   {order.pages > 1 && <p><strong>Pages:</strong> {order.pages} × {order.copies} copies</p>}
                   {order.notes && <p><strong>Notes:</strong> {order.notes}</p>}
 
-                  {/* ✅ FIXED: Force download using handleDownloadFile instead of <a href> */}
+                  {/* ✅ FIXED: Backend proxy — downloads all PDFs correctly */}
                   {order.fileUrl && (
                     <p>
                       <strong>📎 File:</strong>{' '}

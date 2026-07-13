@@ -12,7 +12,7 @@ const Services = () => {
     printType: 'black-white',
     paperSize: 'A4',
     copies: 1,
-    pages: 1,
+    pageRange: '1',
     customerName: '',
     customerPhone: '',
     pickupTime: 'Today 5 PM',
@@ -25,6 +25,8 @@ const Services = () => {
   const [itemSearch, setItemSearch] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [orderId, setOrderId] = useState('');
+  const [detectedPages, setDetectedPages] = useState(null);
+  const [detectingPages, setDetectingPages] = useState(false);
 
   // Auto-fill from logged in user
   useEffect(() => {
@@ -50,6 +52,57 @@ const Services = () => {
     }
   };
 
+  // ─── Parse page range string → total page count ───────────────────────────
+  // Supports: "5" | "1-10" | "1-5, 8, 10-12" | "all"
+  const parsePageRange = (rangeStr, totalPages = null) => {
+    if (!rangeStr || rangeStr.trim() === '') return 1;
+    const str = rangeStr.trim().toLowerCase();
+    if (str === 'all') return totalPages || 1;
+
+    let total = 0;
+    const parts = str.split(',');
+    for (let part of parts) {
+      part = part.trim();
+      if (part.includes('-')) {
+        const [startStr, endStr] = part.split('-');
+        const start = parseInt(startStr.trim());
+        const end = parseInt(endStr.trim());
+        if (!isNaN(start) && !isNaN(end) && end >= start) {
+          total += end - start + 1;
+        }
+      } else {
+        const n = parseInt(part);
+        if (!isNaN(n) && n > 0) total += 1;
+      }
+    }
+    return total || 1;
+  };
+
+  // ─── Auto-detect PDF page count from uploaded file (no extra package) ──────
+  const getPdfPageCount = (file) => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const text = e.target.result;
+          // PDF stores page count as "/Count N" in its Pages dictionary.
+          // We grab all occurrences and take the largest (= root Pages count).
+          const matches = text.match(/\/Count\s+(\d+)/g);
+          if (matches && matches.length > 0) {
+            const counts = matches.map(m => parseInt(m.replace(/\/Count\s+/, '')));
+            resolve(Math.max(...counts));
+          } else {
+            resolve(null);
+          }
+        } catch {
+          resolve(null);
+        }
+      };
+      reader.onerror = () => resolve(null);
+      reader.readAsBinaryString(file);
+    });
+  };
+
   const addItem = (item) => {
     if (!selectedItems.find(i => i._id === item._id)) {
       setSelectedItems([...selectedItems, item]);
@@ -60,23 +113,32 @@ const Services = () => {
     setSelectedItems(selectedItems.filter(i => i._id !== id));
   };
 
+  // ─── Price uses parsed page range ─────────────────────────────────────────
   const calculatePrice = () => {
     let pricePerPage = 0;
-    switch(formData.serviceType) {
-      case 'print': pricePerPage = formData.printType === 'color' ? 5 : 2; break;
-      case 'xerox': pricePerPage = 1; break;
-      case 'scan': pricePerPage = 5; break;
+    switch (formData.serviceType) {
+      case 'print':  pricePerPage = formData.printType === 'color' ? 5 : 2; break;
+      case 'xerox':  pricePerPage = 1;  break;
+      case 'scan':   pricePerPage = 5;  break;
       case 'lamination': pricePerPage = 30; break;
-      case 'binding': pricePerPage = 50; break;
+      case 'binding':    pricePerPage = 50; break;
       default: pricePerPage = 2;
     }
-    if (formData.paperSize === 'A3') pricePerPage *= 2;
+    if (formData.paperSize === 'A3')    pricePerPage *= 2;
     if (formData.paperSize === 'Legal') pricePerPage *= 1.5;
-    const servicePrice = pricePerPage * formData.pages * formData.copies;
+
+    // For print/xerox use parsed page range; other services are per-document
+    const needsPageRange = formData.serviceType === 'print' || formData.serviceType === 'xerox';
+    const pageCount = needsPageRange
+      ? parsePageRange(formData.pageRange, detectedPages)
+      : 1;
+
+    const servicePrice = pricePerPage * pageCount * formData.copies;
     const itemsPrice = selectedItems.reduce((sum, item) => sum + item.price, 0);
     return servicePrice + itemsPrice;
   };
 
+  // ─── Submit ────────────────────────────────────────────────────────────────
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -90,11 +152,17 @@ const Services = () => {
         fileName = uploadRes.data.fileName || formData.file.name;
       }
       const price = calculatePrice();
+      const needsPageRange = formData.serviceType === 'print' || formData.serviceType === 'xerox';
+      const resolvedPages = needsPageRange
+        ? parsePageRange(formData.pageRange, detectedPages)
+        : 1;
+
       const orderData = {
         serviceType: formData.serviceType,
         printType: formData.printType,
         paperSize: formData.paperSize,
-        pages: Number(formData.pages),
+        pages: resolvedPages,
+        pageRange: formData.pageRange,
         copies: Number(formData.copies),
         totalPrice: price,
         customerName: formData.customerName,
@@ -114,11 +182,26 @@ const Services = () => {
   };
 
   const handleChange = (e) => {
-    setFormData({...formData, [e.target.name]: e.target.value});
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleFileChange = (e) => {
-    setFormData({...formData, file: e.target.files[0]});
+  // ─── File change: auto-detect PDF pages ───────────────────────────────────
+  const handleFileChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setFormData(prev => ({ ...prev, file }));
+    setDetectedPages(null);
+
+    if (file.type === 'application/pdf') {
+      setDetectingPages(true);
+      const count = await getPdfPageCount(file);
+      setDetectingPages(false);
+      if (count) {
+        setDetectedPages(count);
+        // Auto-fill page range with full document; user can edit it
+        setFormData(prev => ({ ...prev, file, pageRange: `1-${count}` }));
+      }
+    }
   };
 
   const resetForm = () => {
@@ -126,12 +209,14 @@ const Services = () => {
     setOrderId('');
     setSelectedItems([]);
     setItemSearch('');
+    setDetectedPages(null);
+    setDetectingPages(false);
     setFormData({
       serviceType: 'print',
       printType: 'black-white',
       paperSize: 'A4',
       copies: 1,
-      pages: 1,
+      pageRange: '1',
       customerName: user ? user.name : '',
       customerPhone: user ? user.whatsapp : '',
       pickupTime: 'Today 5 PM',
@@ -140,6 +225,7 @@ const Services = () => {
     });
   };
 
+  // ─── Success screen ────────────────────────────────────────────────────────
   if (submitted) {
     return (
       <div className="success-page">
@@ -184,6 +270,10 @@ const Services = () => {
       </div>
     );
   }
+
+  // ─── Derived values for display ────────────────────────────────────────────
+  const needsPageRange = formData.serviceType === 'print' || formData.serviceType === 'xerox';
+  const parsedPageCount = parsePageRange(formData.pageRange, detectedPages);
 
   return (
     <div className="services-page">
@@ -253,12 +343,46 @@ const Services = () => {
           <input type="number" name="copies" min="1" value={formData.copies} onChange={handleChange} required />
         </div>
 
+        {/* ── File Upload ── */}
         <div className="form-group">
           <label>Upload File (optional):</label>
           <input type="file" accept=".pdf,.doc,.docx,.jpg,.png,.jpeg" onChange={handleFileChange} />
-          <small>PDF, Word, Images accepted</small>
+          {detectingPages && (
+            <small className="detecting-hint">🔍 Reading PDF page count...</small>
+          )}
+          {detectedPages && !detectingPages && (
+            <div className="pdf-detect-banner">
+              📄 PDF detected · <strong>{detectedPages} total pages</strong> · Page range auto-filled below
+            </div>
+          )}
+          {!detectedPages && !detectingPages && (
+            <small>PDF, Word, Images accepted</small>
+          )}
         </div>
 
+        {/* ── Page Range (only for Print & Xerox) ── */}
+        {needsPageRange && (
+          <div className="form-group">
+            <label>Pages to Print:</label>
+            <input
+              type="text"
+              name="pageRange"
+              value={formData.pageRange}
+              onChange={handleChange}
+              placeholder="e.g.  all  or  1-10  or  1-5, 8, 10-12"
+            />
+            <div className="page-range-hint">
+              <span className="page-count-badge">
+                📌 {parsedPageCount} page{parsedPageCount !== 1 ? 's' : ''} selected
+              </span>
+              <span className="page-range-examples">
+                Try: <code>all</code> · <code>1-5</code> · <code>1-5, 8</code> · <code>3, 6-9, 12</code>
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* ── Stationery Items ── */}
         <div className="form-group">
           <label>Add Stationery Items:</label>
           <div className="item-search-box">
