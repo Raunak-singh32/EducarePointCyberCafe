@@ -4294,3 +4294,74 @@ html:has(.navbar.navbar-hidden)::after {
   border-radius: var(--radius-sm);
   padding: 8px 12px;
 }
+/* ── Auto-fill banner ── */
+.autofill-banner {
+  background: rgba(76, 175, 80, 0.15);
+  border: 1px solid rgba(76, 175, 80, 0.4);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  color: #4caf50;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+/* ── Guest login prompt ── */
+.guest-login-prompt {
+  background: rgba(255, 154, 60, 0.1);
+  border: 1px solid rgba(255, 154, 60, 0.3);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.guest-login-prompt p {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  margin-bottom: 8px;
+}
+
+.prompt-login-btn {
+  background: var(--gradient-brand);
+  border: none;
+  border-radius: 999px;
+  padding: 8px 20px;
+  color: white;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.skip-text {
+  color: var(--text-muted) !important;
+  font-size: 0.75rem !important;
+  margin-top: 6px !important;
+}
+
+/* ── Delivery Toggle ── */
+.delivery-toggle {
+  display: flex;
+  gap: 8px;
+  margin: 10px 0;
+}
+
+.toggle-btn {
+  flex: 1;
+  padding: 10px;
+  border-radius: 999px;
+  border: 1px solid var(--glass-border);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.toggle-btn.active {
+  background: var(--gradient-brand);
+  color: white;
+  border-color: transparent;
+  box-shadow: 0 4px 14px var(--glow-accent);
+}
