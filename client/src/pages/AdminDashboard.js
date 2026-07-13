@@ -195,78 +195,131 @@ const AdminDashboard = () => {
         </>
       )}
 
-      {activeTab === 'orders' && (
-        <div className="orders-section">
-          {orders.length === 0 ? (
-            <p className="no-orders">No orders yet</p>
-          ) : (
-            orders.map(order => (
-              <div key={order._id} className={`order-card ${order.status}`}>
-                <div className="order-header">
-                  <h4>Order #{order._id.slice(-6)}</h4>
-                  <span className={`order-status ${order.status}`}>{order.status}</span>
-                </div>
-                <div className="order-details">
-                  <p><strong>Service:</strong> {order.serviceType}</p>
-                  {order.items && order.items.length > 0 && (
-                    <div className="order-items">
-                      <p><strong>Items:</strong></p>
-                      {order.items.map((item, idx) => (
-                        <p key={idx}>• {item.name} × {item.quantity} = ₹{item.price * item.quantity}</p>
-                      ))}
-                    </div>
-                  )}
-                  <p><strong>Customer:</strong> {order.customerName} ({order.customerPhone})</p>
-                 <p><strong>Type:</strong> {order.deliveryType === 'delivery' ? '🚚 Home Delivery' : '🏪 Pickup'}</p>
-                  {order.deliveryType === 'delivery' && order.address && (
-                      <p><strong>📍 Delivery Address:</strong> {order.address}</p>
-                        )}
-                      {order.deliveryType !== 'delivery' && (
-               <p><strong>⏰ Pickup Time:</strong> {order.pickupTime}</p>
-                          )}
-                  <p><strong>Amount:</strong> ₹{order.totalPrice}</p>
-                  {order.pages > 1 && <p><strong>Pages:</strong> {order.pages} × {order.copies} copies</p>}
-                  {order.notes && <p><strong>Notes:</strong> {order.notes}</p>}
-
-                  {/* ✅ FIXED: Backend proxy — downloads all PDFs correctly */}
-                  {order.fileUrl && (
-                    <p>
-                      <strong>📎 File:</strong>{' '}
-                      <button
-                        onClick={() => handleDownloadFile(order.fileUrl, order.fileName)}
-                        className="file-link"
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-                      >
-                        📥 Download File {order.fileName ? `(${order.fileName})` : ''}
-                      </button>
-                    </p>
-                  )}
-                </div>
-                <div className="order-actions">
-                  {order.status === 'pending' && (
-                    <>
-                      <button onClick={() => updateOrderStatus(order._id, 'processing')} className="process-btn">Start Processing</button>
-                      <a href={`https://wa.me/91${order.customerPhone}?text=Hi%20${order.customerName},%20your%20order%20is%20confirmed!`} target="_blank" rel="noreferrer" className="whatsapp-btn">📱 WhatsApp</a>
-                    </>
-                  )}
-                  {order.status === 'processing' && (
-                    <>
-                      <button onClick={() => updateOrderStatus(order._id, 'ready')} className="ready-btn">✅ Mark Ready</button>
-                      <a href={`https://wa.me/91${order.customerPhone}?text=Hi%20${order.customerName},%20your%20order%20is%20ready!%20Come%20and%20pickup.`} target="_blank" rel="noreferrer" className="whatsapp-btn">📱 WhatsApp Ready</a>
-                    </>
-                  )}
-                  {order.status === 'ready' && (
-                    <>
-                      <button onClick={() => updateOrderStatus(order._id, 'completed')} className="complete-btn">Complete</button>
-                      <span className="done-text">Waiting for pickup</span>
-                    </>
-                  )}
-                </div>
+     {activeTab === 'orders' && (
+  <div className="orders-section">
+    {orders.length === 0 ? (
+      <p className="no-orders">No orders yet</p>
+    ) : (
+      orders.map(order => (
+        <div key={order._id} className={`order-card ${order.status}`}>
+          <div className="order-header">
+            <h4>Order #{order._id.slice(-6)}</h4>
+            <div className="status-badges">
+              {/* ── Payment Status Badge ── */}
+              <span className={`payment-badge ${order.paymentStatus}`}>
+                {order.paymentStatus === 'pending' && order.paymentMethod === 'upi' && '⏳ Payment Pending'}
+                {order.paymentStatus === 'pending' && order.paymentMethod === 'cod' && '💰 COD'}
+                {order.paymentStatus === 'paid' && '✅ Paid'}
+                {order.paymentStatus === 'failed' && '❌ Failed'}
+              </span>
+              {/* ── Order Status Badge ── */}
+              <span className={`order-status ${order.status}`}>{order.status}</span>
+            </div>
+          </div>
+          
+          <div className="order-details">
+            <p><strong>Service:</strong> {order.serviceType}</p>
+            {order.items && order.items.length > 0 && (
+              <div className="order-items">
+                <p><strong>Items:</strong></p>
+                {order.items.map((item, idx) => (
+                  <p key={idx}>• {item.name} × {item.quantity} = ₹{item.price * item.quantity}</p>
+                ))}
               </div>
-            ))
-          )}
+            )}
+            <p><strong>Customer:</strong> {order.customerName} ({order.customerPhone})</p>
+            <p><strong>Type:</strong> {order.deliveryType === 'delivery' ? '🚚 Home Delivery' : '🏪 Pickup'}</p>
+            {order.deliveryType === 'delivery' && order.deliveryAddress && (
+              <p><strong>📍 Address:</strong> {order.deliveryAddress}</p>
+            )}
+            {order.deliveryType !== 'delivery' && order.pickupTime && (
+              <p><strong>⏰ Pickup Time:</strong> {order.pickupTime}</p>
+            )}
+            <p><strong>Amount:</strong> ₹{order.totalPrice}</p>
+            <p><strong>Payment:</strong> {order.paymentMethod === 'upi' ? 'UPI' : 'Cash on Delivery'}</p>
+            {order.pages > 1 && <p><strong>Pages:</strong> {order.pages} × {order.copies} copies</p>}
+            {order.notes && <p><strong>Notes:</strong> {order.notes}</p>}
+
+            {/* ── Payment Screenshot Viewer ── */}
+            {order.paymentScreenshot && (
+              <div className="payment-screenshot">
+                <p><strong>📸 Payment Screenshot:</strong></p>
+                <a href={order.paymentScreenshot} target="_blank" rel="noreferrer">
+                  <img 
+                    src={order.paymentScreenshot} 
+                    alt="Payment proof" 
+                    className="screenshot-thumb"
+                  />
+                </a>
+              </div>
+            )}
+
+            {order.fileUrl && (
+              <p>
+                <strong>📎 File:</strong>{' '}
+                <button
+                  onClick={() => handleDownloadFile(order.fileUrl, order.fileName)}
+                  className="file-link"
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                >
+                  📥 Download File {order.fileName ? `(${order.fileName})` : ''}
+                </button>
+              </p>
+            )}
+          </div>
+          
+          <div className="order-actions">
+            {/* ── UPI Pending: Verify/Reject ── */}
+            {order.paymentMethod === 'upi' && order.paymentStatus === 'pending' && (
+              <>
+                <button 
+                  onClick={() => orderAPI.verifyPayment(order._id, 'paid').then(() => fetchOrders())} 
+                  className="verify-btn"
+                >
+                  ✅ Verify Payment
+                </button>
+                <button 
+                  onClick={() => orderAPI.verifyPayment(order._id, 'failed').then(() => fetchOrders())} 
+                  className="reject-btn"
+                >
+                  ❌ Reject
+                </button>
+                <a 
+                  href={`https://wa.me/91${order.customerPhone}?text=Hi%20${order.customerName},%20please%20share%20your%20payment%20screenshot%20for%20order%20verification.`} 
+                  target="_blank" 
+                  rel="noreferrer" 
+                  className="whatsapp-btn"
+                >
+                  📱 Ask Screenshot
+                </a>
+              </>
+            )}
+            
+            {/* ── Normal flow after payment verified ── */}
+            {order.status === 'pending' && (order.paymentStatus === 'paid' || order.paymentMethod === 'cod') && (
+              <>
+                <button onClick={() => updateOrderStatus(order._id, 'processing')} className="process-btn">Start Processing</button>
+                <a href={`https://wa.me/91${order.customerPhone}?text=Hi%20${order.customerName},%20your%20order%20is%20confirmed!`} target="_blank" rel="noreferrer" className="whatsapp-btn">📱 WhatsApp</a>
+              </>
+            )}
+            {order.status === 'processing' && (
+              <>
+                <button onClick={() => updateOrderStatus(order._id, 'ready')} className="ready-btn">✅ Mark Ready</button>
+                <a href={`https://wa.me/91${order.customerPhone}?text=Hi%20${order.customerName},%20your%20order%20is%20ready!%20Come%20and%20pickup.`} target="_blank" rel="noreferrer" className="whatsapp-btn">📱 WhatsApp Ready</a>
+              </>
+            )}
+            {order.status === 'ready' && (
+              <>
+                <button onClick={() => updateOrderStatus(order._id, 'completed')} className="complete-btn">Complete</button>
+                <span className="done-text">Waiting for {order.deliveryType === 'delivery' ? 'delivery' : 'pickup'}</span>
+              </>
+            )}
+          </div>
         </div>
-      )}
+      ))
+    )}
+  </div>
+)}
     </div>
   );
 };

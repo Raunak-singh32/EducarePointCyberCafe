@@ -31,7 +31,11 @@ export const productAPI = {
 export const orderAPI = {
     create: (data) => api.post('/orders', data),
     getAll: () => api.get('/orders'),
-    updateStatus: (id, status) => api.put(`/orders/${id}`, { status })
+    updateStatus: (id, status) => api.put(`/orders/${id}`, { status }),
+     uploadPaymentScreenshot: (id, formData) => api.post(`/orders/${id}/payment-screenshot`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+    }),
+    verifyPayment: (id, paymentStatus) => api.put(`/orders/${id}/verify-payment`, { paymentStatus })
 };
 
 // Upload APIs

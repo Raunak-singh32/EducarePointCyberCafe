@@ -5,6 +5,7 @@ const orderSchema = new mongoose.Schema({
   printType: { type: String, default: '' },
   paperSize: { type: String, default: 'A4' },
   pages: { type: Number, default: 1 },
+  pageRange: { type: String, default: '1' },
   copies: { type: Number, default: 1 },
   items: [{
     itemId: String,
@@ -15,14 +16,38 @@ const orderSchema = new mongoose.Schema({
   totalPrice: { type: Number, required: true },
   customerName: { type: String, required: true },
   customerPhone: { type: String, required: true },
-  pickupTime: { type: String, required: true },
+  
+  // ── FIXED: pickupTime is NOT required anymore ──
+  pickupTime: { type: String, default: '' },
+  
   deliveryType: { type: String, enum: ['pickup', 'delivery'], default: 'pickup' },
   address: { type: String, default: '' },
+  
+  // ── NEW: Payment fields ──
+  paymentMethod: { 
+    type: String, 
+    enum: ['upi', 'cod'], 
+    default: 'cod' 
+  },
+  paymentStatus: { 
+    type: String, 
+    enum: ['pending', 'paid', 'failed', 'refunded'], 
+    default: 'pending' 
+  },
+  paymentScreenshot: { type: String, default: '' },
+  
   notes: { type: String, default: '' },
   fileUrl: { type: String, default: '' },
   fileName: { type: String, default: '' },
-  status: { type: String, enum: ['pending', 'processing', 'ready', 'completed'], default: 'pending' },
-  createdAt: { type: Date, default: Date.now }
+  
+  status: { 
+    type: String, 
+    enum: ['pending', 'processing', 'ready', 'completed', 'cancelled'], 
+    default: 'pending' 
+  },
+  
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now }
 });
 
 module.exports = mongoose.model('Order', orderSchema);

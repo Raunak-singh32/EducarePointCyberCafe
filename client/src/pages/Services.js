@@ -15,6 +15,8 @@ const Services = () => {
     pageRange: '1',
     customerName: '',
     customerPhone: '',
+    deliveryType: 'pickup',      // ── NEW
+    deliveryAddress: '',         // ── NEW
     pickupTime: 'Today 5 PM',
     notes: '',
     file: null
@@ -23,8 +25,16 @@ const Services = () => {
   const [selectedItems, setSelectedItems] = useState([]);
   const [availableItems, setAvailableItems] = useState([]);
   const [itemSearch, setItemSearch] = useState('');
-  const [submitted, setSubmitted] = useState(false);
+  
+  // ── NEW: Multi-step flow ──
+  const [step, setStep] = useState('form'); // 'form' | 'payment' | 'success'
+  const [paymentMethod, setPaymentMethod] = useState(''); // 'upi' | 'cod'
   const [orderId, setOrderId] = useState('');
+  const [screenshotFile, setScreenshotFile] = useState(null);
+  const [screenshotPreview, setScreenshotPreview] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  
   const [detectedPages, setDetectedPages] = useState(null);
   const [detectingPages, setDetectingPages] = useState(false);
 
@@ -52,8 +62,6 @@ const Services = () => {
     }
   };
 
-  // ─── Parse page range string → total page count ───────────────────────────
-  // Supports: "5" | "1-10" | "1-5, 8, 10-12" | "all"
   const parsePageRange = (rangeStr, totalPages = null) => {
     if (!rangeStr || rangeStr.trim() === '') return 1;
     const str = rangeStr.trim().toLowerCase();
@@ -78,15 +86,12 @@ const Services = () => {
     return total || 1;
   };
 
-  // ─── Auto-detect PDF page count from uploaded file (no extra package) ──────
   const getPdfPageCount = (file) => {
     return new Promise((resolve) => {
       const reader = new FileReader();
       reader.onload = (e) => {
         try {
           const text = e.target.result;
-          // PDF stores page count as "/Count N" in its Pages dictionary.
-          // We grab all occurrences and take the largest (= root Pages count).
           const matches = text.match(/\/Count\s+(\d+)/g);
           if (matches && matches.length > 0) {
             const counts = matches.map(m => parseInt(m.replace(/\/Count\s+/, '')));
@@ -113,7 +118,6 @@ const Services = () => {
     setSelectedItems(selectedItems.filter(i => i._id !== id));
   };
 
-  // ─── Price uses parsed page range ─────────────────────────────────────────
   const calculatePrice = () => {
     let pricePerPage = 0;
     switch (formData.serviceType) {
@@ -127,7 +131,6 @@ const Services = () => {
     if (formData.paperSize === 'A3')    pricePerPage *= 2;
     if (formData.paperSize === 'Legal') pricePerPage *= 1.5;
 
-    // For print/xerox use parsed page range; other services are per-document
     const needsPageRange = formData.serviceType === 'print' || formData.serviceType === 'xerox';
     const pageCount = needsPageRange
       ? parsePageRange(formData.pageRange, detectedPages)
@@ -135,12 +138,49 @@ const Services = () => {
 
     const servicePrice = pricePerPage * pageCount * formData.copies;
     const itemsPrice = selectedItems.reduce((sum, item) => sum + item.price, 0);
-    return servicePrice + itemsPrice;
+    
+    // ── NEW: Delivery charge ──
+    const deliveryCharge = formData.deliveryType === 'delivery' ? 15 : 0;
+    
+    return servicePrice + itemsPrice + deliveryCharge;
   };
 
-  // ─── Submit ────────────────────────────────────────────────────────────────
-  const handleSubmit = async (e) => {
+  // ── Step 1: Go to Payment Selection ──
+  const handleProceedToPayment = (e) => {
     e.preventDefault();
+    
+    // Validation
+    if (!formData.customerName.trim() || !formData.customerPhone.trim()) {
+      alert('Please fill in your name and phone number');
+      return;
+    }
+    if (formData.customerPhone.length !== 10) {
+      alert('Please enter a valid 10-digit phone number');
+      return;
+    }
+    if (formData.deliveryType === 'delivery' && !formData.deliveryAddress.trim()) {
+      alert('Please enter delivery address');
+      return;
+    }
+    
+    setStep('payment');
+    window.scrollTo(0, 0);
+  };
+
+  // ── Step 2: Handle Payment Method Selection ──
+  const handlePaymentMethodSelect = async (method) => {
+    setPaymentMethod(method);
+    
+    if (method === 'cod') {
+      // COD: Create order immediately
+      await createOrder('cod');
+    }
+    // If UPI: Stay on payment screen, show QR
+  };
+
+  // ── Step 3: Create Order ──
+  const createOrder = async (method) => {
+    setSubmitting(true);
     try {
       let fileUrl = '';
       let fileName = '';
@@ -151,6 +191,7 @@ const Services = () => {
         fileUrl = uploadRes.data.fileUrl;
         fileName = uploadRes.data.fileName || formData.file.name;
       }
+      
       const price = calculatePrice();
       const needsPageRange = formData.serviceType === 'print' || formData.serviceType === 'xerox';
       const resolvedPages = needsPageRange
@@ -167,17 +208,58 @@ const Services = () => {
         totalPrice: price,
         customerName: formData.customerName,
         customerPhone: formData.customerPhone,
-        pickupTime: formData.pickupTime,
+        deliveryType: formData.deliveryType,
+        deliveryAddress: formData.deliveryAddress,
+        pickupTime: formData.deliveryType === 'pickup' ? formData.pickupTime : '',
         notes: formData.notes,
         fileUrl,
         fileName,
+        paymentMethod: method,
+        paymentStatus: method === 'cod' ? 'pending' : 'pending', // UPI will be verified by admin
         items: selectedItems.map(i => ({ itemId: i._id, name: i.name, price: i.price, quantity: 1 }))
       };
+      
       const res = await orderAPI.create(orderData);
       setOrderId(res.data.order._id);
-      setSubmitted(true);
+      setStep('success');
     } catch (err) {
-      alert('Error submitting order: ' + err.message);
+      alert('Error creating order: ' + err.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // ── Step 4: Upload Screenshot & Submit UPI Order ──
+  const handleScreenshotUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setScreenshotFile(file);
+    
+    const reader = new FileReader();
+    reader.onloadend = () => setScreenshotPreview(reader.result);
+    reader.readAsDataURL(file);
+  };
+
+  const handleUPIOrderSubmit = async () => {
+    if (!screenshotFile) {
+      alert('Please upload payment screenshot for verification');
+      return;
+    }
+    
+    setUploading(true);
+    try {
+      // First create the order
+      await createOrder('upi');
+      
+      // Then upload screenshot
+      const formDataUpload = new FormData();
+      formDataUpload.append('screenshot', screenshotFile);
+      await orderAPI.uploadPaymentScreenshot(orderId, formDataUpload);
+      
+    } catch (err) {
+      alert('Error: ' + err.message);
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -185,7 +267,6 @@ const Services = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // ─── File change: auto-detect PDF pages ───────────────────────────────────
   const handleFileChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -198,15 +279,17 @@ const Services = () => {
       setDetectingPages(false);
       if (count) {
         setDetectedPages(count);
-        // Auto-fill page range with full document; user can edit it
         setFormData(prev => ({ ...prev, file, pageRange: `1-${count}` }));
       }
     }
   };
 
   const resetForm = () => {
-    setSubmitted(false);
+    setStep('form');
+    setPaymentMethod('');
     setOrderId('');
+    setScreenshotFile(null);
+    setScreenshotPreview('');
     setSelectedItems([]);
     setItemSearch('');
     setDetectedPages(null);
@@ -219,24 +302,59 @@ const Services = () => {
       pageRange: '1',
       customerName: user ? user.name : '',
       customerPhone: user ? user.whatsapp : '',
+      deliveryType: 'pickup',
+      deliveryAddress: '',
       pickupTime: 'Today 5 PM',
       notes: '',
       file: null
     });
   };
 
-  // ─── Success screen ────────────────────────────────────────────────────────
-  if (submitted) {
+  // ─── DELIVERY CHARGE DISPLAY ───
+  const deliveryCharge = formData.deliveryType === 'delivery' ? 15 : 0;
+
+  // ═══════════════════════════════════════════════════════════════
+  // STEP 3: SUCCESS SCREEN
+  // ═══════════════════════════════════════════════════════════════
+  if (step === 'success') {
+    const isUPI = paymentMethod === 'upi';
+    const isCOD = paymentMethod === 'cod';
+    
     return (
       <div className="success-page">
-        <h2>✅ Order Submitted Successfully!</h2>
-        <div className="order-summary">
-          <h3>Order ID: {orderId}</h3>
-          <p><strong>Service:</strong> {formData.serviceType.toUpperCase()}</p>
-          <p><strong>Total Amount:</strong> ₹{calculatePrice()}</p>
-          <p><strong>Pickup Time:</strong> {formData.pickupTime}</p>
-          <p><strong>Name:</strong> {formData.customerName}</p>
-          <p><strong>Phone:</strong> {formData.customerPhone}</p>
+        <div className="success-icon">✅</div>
+        <h2>Order {isUPI ? 'Submitted!' : 'Confirmed!'}</h2>
+        
+        <div className="order-summary-card">
+          <h3>Order ID: {orderId.slice(-6)}</h3>
+          
+          <div className="summary-row">
+            <span>Service:</span>
+            <span>{formData.serviceType.toUpperCase()}</span>
+          </div>
+          <div className="summary-row">
+            <span>Total Amount:</span>
+            <span className="price">₹{calculatePrice()}</span>
+          </div>
+          <div className="summary-row">
+            <span>Delivery:</span>
+            <span>{formData.deliveryType === 'delivery' ? '🚚 Home Delivery' : '🏪 Pickup'}</span>
+          </div>
+          {formData.deliveryType === 'pickup' && (
+            <div className="summary-row">
+              <span>Pickup Time:</span>
+              <span>{formData.pickupTime}</span>
+            </div>
+          )}
+          <div className="summary-row">
+            <span>Name:</span>
+            <span>{formData.customerName}</span>
+          </div>
+          <div className="summary-row">
+            <span>Phone:</span>
+            <span>{formData.customerPhone}</span>
+          </div>
+          
           {selectedItems.length > 0 && (
             <div className="items-summary">
               <p><strong>Added Items:</strong></p>
@@ -245,33 +363,163 @@ const Services = () => {
               ))}
             </div>
           )}
-          <div className="payment-section">
-            <h3>💳 Payment Options</h3>
-            <div className="upi-section">
-              <p className="upi-label">Pay via UPI:</p>
-              <div className="upi-id-box">
-                <span className="upi-id">pointeducare@ybl</span>
-                <button className="copy-btn" onClick={() => { navigator.clipboard.writeText('pointeducare@ybl'); alert('UPI ID copied!'); }}>
-                  📋 Copy
-                </button>
-              </div>
+          
+          {/* ── UPI: Waiting for verification ── */}
+          {isUPI && (
+            <div className="verification-notice">
+              <div className="notice-icon">⏳</div>
+              <h4>Payment Verification Pending</h4>
+              <p>Your payment screenshot has been sent to the shop owner.</p>
+              <p>Order will be processed after verification.</p>
+              <p className="notice-hint">You'll receive a WhatsApp confirmation shortly.</p>
             </div>
-            <div className="qr-section">
-              <p className="qr-label">Or scan QR code:</p>
-              <img src="/phonepe-qr.png" alt="PhonePe QR Code" className="qr-code"
-                onError={(e) => { e.target.style.display = 'none'; e.target.parentElement.innerHTML += '<p style="color: #ff6b6b;">⚠️ Use UPI ID above.</p>'; }}
-              />
-              <p className="qr-name">Ajay Kumar Ram</p>
+          )}
+          
+          {/* ── COD: Direct confirmation ── */}
+          {isCOD && (
+            <div className="cod-notice">
+              <div className="notice-icon">💰</div>
+              <h4>Cash on {formData.deliveryType === 'delivery' ? 'Delivery' : 'Pickup'}</h4>
+              <p>Please keep ₹{calculatePrice()} ready.</p>
+              <p>You'll receive a WhatsApp confirmation shortly.</p>
             </div>
-            <p className="payment-note">After payment, click "Submit Order" and owner will verify.</p>
-          </div>
-          <button onClick={resetForm} className="new-order-btn">📝 New Order</button>
+          )}
         </div>
+        
+        <button onClick={resetForm} className="new-order-btn">📝 Place New Order</button>
       </div>
     );
   }
 
-  // ─── Derived values for display ────────────────────────────────────────────
+  // ═══════════════════════════════════════════════════════════════
+  // STEP 2: PAYMENT SCREEN
+  // ═══════════════════════════════════════════════════════════════
+  if (step === 'payment') {
+    return (
+      <div className="services-page payment-step">
+        <h2>💳 Choose Payment Method</h2>
+        
+        <div className="payment-methods">
+          {/* ── UPI Option ── */}
+          <div 
+            className={`payment-card ${paymentMethod === 'upi' ? 'selected' : ''}`}
+            onClick={() => handlePaymentMethodSelect('upi')}
+          >
+            <div className="payment-icon">📱</div>
+            <h3>Pay Now (UPI)</h3>
+            <p>Scan QR & pay instantly</p>
+          </div>
+          
+          {/* ── COD Option ── */}
+          <div 
+            className={`payment-card ${paymentMethod === 'cod' ? 'selected' : ''}`}
+            onClick={() => handlePaymentMethodSelect('cod')}
+          >
+            <div className="payment-icon">💵</div>
+            <h3>Cash on {formData.deliveryType === 'delivery' ? 'Delivery' : 'Pickup'}</h3>
+            <p>Pay when you receive</p>
+          </div>
+        </div>
+        
+        {/* ── UPI QR Code Section ── */}
+        {paymentMethod === 'upi' && (
+          <div className="upi-payment-section">
+            <div className="upi-amount">
+              <h3>Amount to Pay: ₹{calculatePrice()}</h3>
+            </div>
+            
+            <div className="upi-details">
+              <div className="upi-id-box">
+                <p className="upi-label">UPI ID:</p>
+                <div className="upi-copy-row">
+                  <span className="upi-id">pointeducare@ybl</span>
+                  <button 
+                    className="copy-btn"
+                    onClick={() => {
+                      navigator.clipboard.writeText('pointeducare@ybl');
+                      alert('UPI ID copied!');
+                    }}
+                  >
+                    📋 Copy
+                  </button>
+                </div>
+              </div>
+              
+              <div className="qr-section">
+                <p className="qr-label">Or scan QR code:</p>
+                <img 
+                  src="/phonepe-qr.png" 
+                  alt="PhonePe QR" 
+                  className="qr-code"
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                    e.target.parentElement.innerHTML += '<p class="qr-fallback">Use UPI ID above</p>';
+                  }}
+                />
+                <p className="qr-name">Ajay Kumar Ram</p>
+              </div>
+            </div>
+            
+            {/* ── Screenshot Upload ── */}
+            <div className="screenshot-upload">
+              <h4>📤 Upload Payment Screenshot</h4>
+              <p className="upload-hint">After paying, take a screenshot and upload here for verification</p>
+              
+              <div className="file-upload-box">
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  onChange={handleScreenshotUpload}
+                  id="screenshot-input"
+                  className="hidden-input"
+                />
+                <label htmlFor="screenshot-input" className="upload-label">
+                  {screenshotPreview ? (
+                    <img src={screenshotPreview} alt="Screenshot preview" className="screenshot-preview" />
+                  ) : (
+                    <>
+                      <span className="upload-icon">📷</span>
+                      <span>Click to upload screenshot</span>
+                    </>
+                  )}
+                </label>
+              </div>
+              
+              <button 
+                onClick={handleUPIOrderSubmit}
+                className="submit-payment-btn"
+                disabled={uploading || submitting}
+              >
+                {uploading || submitting ? '⏳ Processing...' : '✅ I\'ve Paid - Submit Order'}
+              </button>
+              
+              <button 
+                onClick={() => setPaymentMethod('')}
+                className="back-btn"
+              >
+                ← Choose Different Method
+              </button>
+            </div>
+          </div>
+        )}
+        
+        {paymentMethod === 'cod' && submitting && (
+          <div className="processing-overlay">
+            <div className="spinner"></div>
+            <p>Creating your order...</p>
+          </div>
+        )}
+        
+        <button onClick={() => setStep('form')} className="back-btn full-width">
+          ← Back to Order Details
+        </button>
+      </div>
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // STEP 1: ORDER FORM
+  // ═══════════════════════════════════════════════════════════════
   const needsPageRange = formData.serviceType === 'print' || formData.serviceType === 'xerox';
   const parsedPageCount = parsePageRange(formData.pageRange, detectedPages);
 
@@ -289,16 +537,14 @@ const Services = () => {
 
       <h2>📝 Place Your Order</h2>
 
-      <form onSubmit={handleSubmit} className="service-form">
+      <form onSubmit={handleProceedToPayment} className="service-form">
 
-        {/* Auto-fill banner */}
         {user && (
           <div className="autofill-banner">
             ✅ Details auto-filled from your account
           </div>
         )}
 
-        {/* Guest login prompt */}
         {!user && (
           <div className="guest-login-prompt">
             <p>💡 <strong>Login</strong> to auto-fill your details</p>
@@ -323,8 +569,26 @@ const Services = () => {
             <div className="form-group">
               <label>Print Type:</label>
               <div className="radio-group">
-                <label><input type="radio" name="printType" value="black-white" checked={formData.printType === 'black-white'} onChange={handleChange} /> Black & White (₹2/page)</label>
-                <label><input type="radio" name="printType" value="color" checked={formData.printType === 'color'} onChange={handleChange} /> Color (₹5/page)</label>
+                <label>
+                  <input 
+                    type="radio" 
+                    name="printType" 
+                    value="black-white" 
+                    checked={formData.printType === 'black-white'} 
+                    onChange={handleChange} 
+                  /> 
+                  Black & White (₹2/page)
+                </label>
+                <label>
+                  <input 
+                    type="radio" 
+                    name="printType" 
+                    value="color" 
+                    checked={formData.printType === 'color'} 
+                    onChange={handleChange} 
+                  /> 
+                  Color (₹5/page)
+                </label>
               </div>
             </div>
             <div className="form-group">
@@ -360,7 +624,7 @@ const Services = () => {
           )}
         </div>
 
-        {/* ── Page Range (only for Print & Xerox) ── */}
+        {/* ── Page Range ── */}
         {needsPageRange && (
           <div className="form-group">
             <label>Pages to Print:</label>
@@ -369,7 +633,7 @@ const Services = () => {
               name="pageRange"
               value={formData.pageRange}
               onChange={handleChange}
-              placeholder="e.g.  all  or  1-10  or  1-5, 8, 10-12"
+              placeholder="e.g. all or 1-10 or 1-5, 8, 10-12"
             />
             <div className="page-range-hint">
               <span className="page-count-badge">
@@ -386,15 +650,35 @@ const Services = () => {
         <div className="form-group">
           <label>Add Stationery Items:</label>
           <div className="item-search-box">
-            <input type="text" placeholder="🔍 Type to search items..." value={itemSearch} onChange={(e) => setItemSearch(e.target.value)} className="item-search-input" />
+            <input 
+              type="text" 
+              placeholder="🔍 Type to search items..." 
+              value={itemSearch} 
+              onChange={(e) => setItemSearch(e.target.value)} 
+              className="item-search-input" 
+            />
             {itemSearch && (
               <div className="item-dropdown">
-                {availableItems.filter(item => item.name.toLowerCase().includes(itemSearch.toLowerCase()) && !selectedItems.find(i => i._id === item._id)).slice(0, 5).map(item => (
-                  <div key={item._id} className="dropdown-item" onClick={() => { addItem(item); setItemSearch(''); }}>
-                    <span>{item.name}</span><span>₹{item.price}</span>
-                  </div>
-                ))}
-                {availableItems.filter(item => item.name.toLowerCase().includes(itemSearch.toLowerCase()) && !selectedItems.find(i => i._id === item._id)).length === 0 && (
+                {availableItems
+                  .filter(item => 
+                    item.name.toLowerCase().includes(itemSearch.toLowerCase()) && 
+                    !selectedItems.find(i => i._id === item._id)
+                  )
+                  .slice(0, 5)
+                  .map(item => (
+                    <div 
+                      key={item._id} 
+                      className="dropdown-item" 
+                      onClick={() => { addItem(item); setItemSearch(''); }}
+                    >
+                      <span>{item.name}</span>
+                      <span>₹{item.price}</span>
+                    </div>
+                  ))}
+                {availableItems.filter(item => 
+                  item.name.toLowerCase().includes(itemSearch.toLowerCase()) && 
+                  !selectedItems.find(i => i._id === item._id)
+                ).length === 0 && (
                   <div className="dropdown-item no-match">No items found</div>
                 )}
               </div>
@@ -413,41 +697,125 @@ const Services = () => {
           )}
         </div>
 
+        {/* ── Customer Details ── */}
         <div className="form-group">
           <label>Your Name: *</label>
-          <input type="text" name="customerName" required value={formData.customerName} onChange={handleChange} placeholder="Enter your name" />
+          <input 
+            type="text" 
+            name="customerName" 
+            required 
+            value={formData.customerName} 
+            onChange={handleChange} 
+            placeholder="Enter your name" 
+          />
         </div>
 
         <div className="form-group">
           <label>Phone Number: *</label>
-          <input type="tel" name="customerPhone" required value={formData.customerPhone} onChange={handleChange} placeholder="WhatsApp number" pattern="[0-9]{10}" title="Enter 10 digit phone number" />
+          <input 
+            type="tel" 
+            name="customerPhone" 
+            required 
+            value={formData.customerPhone} 
+            onChange={handleChange} 
+            placeholder="WhatsApp number" 
+            pattern="[0-9]{10}" 
+            title="Enter 10 digit phone number" 
+          />
         </div>
 
+        {/* ── NEW: Delivery Method ── */}
         <div className="form-group">
-          <label>Pickup Time:</label>
-          <select name="pickupTime" value={formData.pickupTime} onChange={handleChange}>
-            <option>Today 10 AM</option>
-            <option>Today 12 PM</option>
-            <option>Today 2 PM</option>
-            <option>Today 5 PM</option>
-            <option>Today 7 PM</option>
-            <option>Tomorrow 10 AM</option>
-            <option>Tomorrow 12 PM</option>
-            <option>When Available wtsp me</option>
-          </select>
+          <label>Delivery Method: *</label>
+          <div className="radio-group delivery-options">
+            <label className={`delivery-option ${formData.deliveryType === 'pickup' ? 'selected' : ''}`}>
+              <input 
+                type="radio" 
+                name="deliveryType" 
+                value="pickup" 
+                checked={formData.deliveryType === 'pickup'} 
+                onChange={handleChange} 
+              />
+              <span className="delivery-icon">🏪</span>
+              <div className="delivery-info">
+                <strong>Pickup from Shop</strong>
+                <small>Come collect at Educare Point</small>
+              </div>
+            </label>
+            <label className={`delivery-option ${formData.deliveryType === 'delivery' ? 'selected' : ''}`}>
+              <input 
+                type="radio" 
+                name="deliveryType" 
+                value="delivery" 
+                checked={formData.deliveryType === 'delivery'} 
+                onChange={handleChange} 
+              />
+              <span className="delivery-icon">🚚</span>
+              <div className="delivery-info">
+                <strong>Home Delivery</strong>
+                <small>+₹15 delivery charge</small>
+              </div>
+            </label>
+          </div>
         </div>
+
+        {/* ── Pickup Time (only if pickup) ── */}
+        {formData.deliveryType === 'pickup' && (
+          <div className="form-group">
+            <label>Pickup Time:</label>
+            <select name="pickupTime" value={formData.pickupTime} onChange={handleChange}>
+              <option>Today 10 AM</option>
+              <option>Today 12 PM</option>
+              <option>Today 2 PM</option>
+              <option>Today 5 PM</option>
+              <option>Today 7 PM</option>
+              <option>Tomorrow 10 AM</option>
+              <option>Tomorrow 12 PM</option>
+              <option>When Available wtsp me</option>
+            </select>
+          </div>
+        )}
+
+        {/* ── Delivery Address (only if delivery) ── */}
+        {formData.deliveryType === 'delivery' && (
+          <div className="form-group">
+            <label>Delivery Address: *</label>
+            <textarea 
+              name="deliveryAddress" 
+              rows="3" 
+              value={formData.deliveryAddress} 
+              onChange={handleChange} 
+              placeholder="Enter your full address with landmark..."
+              required={formData.deliveryType === 'delivery'}
+            />
+          </div>
+        )}
 
         <div className="form-group">
           <label>Special Instructions:</label>
-          <textarea name="notes" rows="3" value={formData.notes} onChange={handleChange} placeholder="Any special requests..." />
+          <textarea 
+            name="notes" 
+            rows="3" 
+            value={formData.notes} 
+            onChange={handleChange} 
+            placeholder="Any special requests..." 
+          />
         </div>
 
+        {/* ── Price Box ── */}
         <div className="price-box">
-          <h3>Estimated Price: ₹{calculatePrice()}</h3>
-          <p>Pay via UPI after submitting</p>
+          <div className="price-breakdown">
+            <h3>Estimated Price: ₹{calculatePrice()}</h3>
+            {deliveryCharge > 0 && (
+              <p className="delivery-charge">(Includes ₹{deliveryCharge} delivery charge)</p>
+            )}
+          </div>
+          <p className="price-note">Proceed to select payment method</p>
         </div>
 
-        <button type="submit" className="submit-btn">✅ Submit Order</button>
+        <button type="submit" className="submit-btn">
+          💳 Proceed to Payment →
+        </button>
       </form>
     </div>
   );
