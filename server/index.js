@@ -3,6 +3,8 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const path = require('path');
+const session = require('express-session');
+const passport = require('passport');
 
 const app = express();
 
@@ -33,6 +35,19 @@ app.use(cors(corsOptions));
 // ========== BODY PARSERS ==========
 app.use(express.json());
 
+// ========== SESSION (required for passport) ==========
+app.use(session({
+    secret: process.env.JWT_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    cookie: { secure: false }
+}));
+
+// ========== PASSPORT ==========
+app.use(passport.initialize());
+app.use(passport.session());
+require('./passport')(passport);
+
 // ========== STATIC FILES ==========
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
@@ -48,7 +63,7 @@ mongoose.connect(process.env.MONGODB_URI)
 app.use('/api/products', require('./routes/products'));
 app.use('/api/orders', require('./routes/orders'));
 app.use('/api/upload', require('./routes/upload'));
-app.use('/api/auth', require('./routes/auth').router);   // ← NEW
+app.use('/api/auth', require('./routes/auth').router);
 
 // ========== TEST ROUTES ==========
 app.get('/', (req, res) => {

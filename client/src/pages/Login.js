@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -14,6 +14,31 @@ function Login() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState('');
 
+  // Handle Google OAuth callback
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('token');
+    const userParam = params.get('user');
+
+    if (token && userParam) {
+      try {
+        const userData = JSON.parse(decodeURIComponent(userParam));
+        login(userData, token);
+        setSuccess(`Welcome, ${userData.name}! 🎉`);
+        setTimeout(() => {
+          navigate('/');
+        }, 1200);
+      } catch (e) {
+        setError('Google login failed. Please try again.');
+      }
+    }
+
+    const errorParam = params.get('error');
+    if (errorParam) {
+      setError('Google login failed. Please try again.');
+    }
+  }, []);
+
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
     setError('');
@@ -23,7 +48,6 @@ function Login() {
     setError('');
     setSuccess('');
 
-    // ── Validation ──
     if (isLogin) {
       if (!form.email || !form.password) {
         setError('Please enter your email and password.');
@@ -64,16 +88,9 @@ function Login() {
       }
 
       const { token, user } = response.data;
-
-      // Save to context + localStorage
       login(user, token);
-
       setSuccess(isLogin ? `Welcome back, ${user.name}! 🎉` : `Account created! Welcome, ${user.name}! 🎉`);
-
-      // Redirect after short delay
-      setTimeout(() => {
-        navigate(-1);
-      }, 1200);
+      setTimeout(() => { navigate(-1); }, 1200);
 
     } catch (err) {
       const msg = err.response?.data?.message || 'Something went wrong. Please try again.';
@@ -87,7 +104,6 @@ function Login() {
     <div className="auth-page">
       <div className="auth-card">
 
-        {/* Header */}
         <div className="auth-header">
           <img src="/wheel-rotating.gif" alt="Educare Point" className="auth-logo" />
           <h2 className="auth-title">Educare Point</h2>
@@ -96,7 +112,6 @@ function Login() {
           </p>
         </div>
 
-        {/* Toggle */}
         <div className="auth-toggle">
           <button
             className={`auth-toggle-btn ${isLogin ? 'active' : ''}`}
@@ -112,16 +127,11 @@ function Login() {
           </button>
         </div>
 
-        {/* Error */}
         {error && <p className="auth-error">⚠️ {error}</p>}
-
-        {/* Success */}
         {success && <p className="auth-success">✅ {success}</p>}
 
-        {/* Form */}
         <div className="auth-form">
 
-          {/* Sign Up only — Name */}
           {!isLogin && (
             <div className="auth-field">
               <label>Full Name <span className="required">*</span></label>
@@ -135,7 +145,6 @@ function Login() {
             </div>
           )}
 
-          {/* Email */}
           <div className="auth-field">
             <label>Email <span className="required">*</span></label>
             <input
@@ -147,7 +156,6 @@ function Login() {
             />
           </div>
 
-          {/* Password */}
           <div className="auth-field">
             <label>Password <span className="required">*</span></label>
             <input
@@ -159,7 +167,6 @@ function Login() {
             />
           </div>
 
-          {/* Sign Up only — WhatsApp + Address */}
           {!isLogin && (
             <>
               <div className="auth-field">
@@ -186,7 +193,6 @@ function Login() {
             </>
           )}
 
-          {/* Submit */}
           <button
             className="auth-submit-btn"
             onClick={handleSubmit}
@@ -198,15 +204,13 @@ function Login() {
             }
           </button>
 
-          {/* Divider */}
           <div className="auth-divider">
             <span>OR</span>
           </div>
 
-          {/* Google — coming soon */}
           <button
             className="auth-google-btn"
-            onClick={() => alert('Google login coming soon!')}
+            onClick={() => window.location.href = 'https://educarepointcybercafe-1.onrender.com/api/auth/google'}
           >
             <svg width="18" height="18" viewBox="0 0 48 48">
               <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
@@ -220,7 +224,6 @@ function Login() {
 
         </div>
 
-        {/* Back */}
         <button className="auth-back-btn" onClick={() => navigate(-1)}>
           ← Back
         </button>

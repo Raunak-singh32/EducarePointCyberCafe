@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const passport = require('passport');
 const User = require('../models/User');
 
 // ── Helper: generate JWT token ──
@@ -185,5 +186,32 @@ router.put('/update', protect, async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 });
+
+// const jwt = require('jsonwebtoken');
+// const passport = require('passport');
+
+// ── GET /api/auth/google ── Start Google OAuth
+router.get('/google',
+    passport.authenticate('google', { scope: ['profile', 'email'] })
+);
+
+// ── GET /api/auth/google/callback ── Google OAuth callback
+router.get('/google/callback',
+    passport.authenticate('google', { failureRedirect: `${process.env.CLIENT_URL}/login?error=google_failed` }),
+    (req, res) => {
+        // Generate JWT for the Google user
+        const token = generateToken(req.user._id);
+        const user = {
+            _id: req.user._id,
+            name: req.user.name,
+            email: req.user.email,
+            whatsapp: req.user.whatsapp,
+            address: req.user.address
+        };
+
+        // Redirect to frontend with token in URL
+        res.redirect(`${process.env.CLIENT_URL}/login?token=${token}&user=${encodeURIComponent(JSON.stringify(user))}`);
+    }
+);
 
 module.exports = { router, protect };
