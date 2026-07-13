@@ -37,7 +37,7 @@ function Login() {
     if (errorParam) {
       setError('Google login failed. Please try again.');
     }
-  }, []);
+  }, [login, navigate]);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
