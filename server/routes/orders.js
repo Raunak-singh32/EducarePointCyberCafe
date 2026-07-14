@@ -210,5 +210,22 @@ router.get('/stats/today', async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 });
+// GET orders by phone number (for customers - no auth needed)
+router.get('/by-phone/:phone', async (req, res) => {
+  try {
+    const { phone } = req.params;
 
+    if (!phone || phone.length !== 10 || !/^\d{10}$/.test(phone)) {
+      return res.status(400).json({ success: false, message: 'Enter a valid 10-digit number' });
+    }
+
+    const orders = await Order.find({ customerPhone: phone })
+      .sort({ createdAt: -1 })
+      .select('serviceType printType copies totalPrice status paymentMethod paymentStatus deliveryType pickupTime address createdAt fileUrl fileName notes');
+
+    res.json({ success: true, orders });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
 module.exports = router;

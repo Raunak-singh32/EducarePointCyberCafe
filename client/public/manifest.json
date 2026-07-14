@@ -1,6 +1,10 @@
 {
   "short_name": "Educare Point",
   "name": "Educare Point Cyber Cafe",
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#1a1a2e",
+  "background_color": "#1a1a2e",
   "icons": [
     {
       "src": "favicon.ico",

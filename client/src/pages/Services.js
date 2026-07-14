@@ -233,6 +233,12 @@ const Services = () => {
     const res = await orderAPI.create(orderData);
     setOrderId(res.data.order._id);
     setStep('success');
+    const createdOrder = await orderAPI.create(orderData);
+setOrderId(createdOrder.data._id);
+
+notifyOwner(orderData, createdOrder.data._id); // ← add this line
+
+setStep('success');
     
   } catch (err) {
     console.error('Full error:', err);
@@ -246,6 +252,22 @@ const Services = () => {
   } finally {
     setSubmitting(false);
   }
+};
+   const notifyOwner = (orderData, createdOrderId) => {
+  const OWNER_PHONE = '919331443939'; // owner's number with country code, no +
+  const message = 
+`🔔 *New Order - Educare Point*
+
+📋 Order ID: ${createdOrderId}
+👤 Customer: ${orderData.customerName}
+📞 Phone: ${orderData.customerPhone}
+🖨️ Service: ${orderData.serviceType.toUpperCase()}
+📦 Delivery: ${orderData.deliveryType === 'pickup' ? 'Pickup' : 'Home Delivery'}
+💰 Total: ₹${orderData.totalPrice}
+💳 Payment: ${orderData.paymentMethod.toUpperCase()}`;
+
+  const url = `https://wa.me/${OWNER_PHONE}?text=${encodeURIComponent(message)}`;
+  window.open(url, '_blank');
 };
   // ── Step 4: Upload Screenshot & Submit UPI Order ──
   const handleScreenshotUpload = (e) => {

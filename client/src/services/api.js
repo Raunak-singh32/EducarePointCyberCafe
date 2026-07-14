@@ -35,7 +35,8 @@ export const orderAPI = {
      uploadPaymentScreenshot: (id, formData) => api.post(`/orders/${id}/payment-screenshot`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
     }),
-    verifyPayment: (id, paymentStatus) => api.put(`/orders/${id}/verify-payment`, { paymentStatus })
+    verifyPayment: (id, paymentStatus) => api.put(`/orders/${id}/verify-payment`, { paymentStatus }),
+    getByPhone: (phone) => api.get(`/orders/by-phone/${phone}`)
 };
 
 // Upload APIs
