@@ -1,4 +1,13 @@
-const cloudinary = require("cloudinary").v2;
+const cloudinary = require('cloudinary').v2;
+
+// Check if env vars exist
+const required = ['CLOUDINARY_CLOUD_NAME', 'CLOUDINARY_API_KEY', 'CLOUDINARY_API_SECRET'];
+const missing = required.filter(key => !process.env[key]);
+
+if (missing.length > 0) {
+  console.error('❌ Missing Cloudinary env vars:', missing);
+  // Don't crash — just log error
+}
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -6,4 +15,4 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-module.exports = cloudinary;
+module.exports = { cloudinary };

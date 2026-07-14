@@ -10,13 +10,31 @@ const storage = multer.memoryStorage();
 const upload = multer({
   storage,
   limits: {
-    fileSize: 50 * 1024 * 1024  // ✅ FIXED: was 10MB, now 50MB for multi-page PDFs
+    fileSize: 10 * 1024 * 1024  // 10MB max (Render free tier safe)
   }
 });
 
+// ── Helper: Upload buffer to Cloudinary with Promise ──
+const uploadToCloudinary = (buffer, options) => {
+  return new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      options,
+      (error, result) => {
+        if (error) {
+          console.error('Cloudinary upload error:', error);
+          reject(error);
+        } else {
+          resolve(result);
+        }
+      }
+    );
+    
+    streamifier.createReadStream(buffer).pipe(uploadStream);
+  });
+};
+
 router.post("/", upload.single("image"), async (req, res) => {
   try {
-
     if (!req.file) {
       return res.status(400).json({
         success: false,
@@ -24,60 +42,75 @@ router.post("/", upload.single("image"), async (req, res) => {
       });
     }
 
+    console.log('Uploading file:', req.file.originalname, 'Size:', req.file.size);
+
     const extension = req.file.originalname
       .split(".")
       .pop()
       .toLowerCase();
 
-    const documentExtensions = [
-      "pdf",
-      "doc",
-      "docx"
-    ];
+    const documentExtensions = ["pdf", "doc", "docx"];
+    const resourceType = documentExtensions.includes(extension) ? "raw" : "image";
 
-    const resourceType = documentExtensions.includes(extension)
-      ? "raw"
-      : "image";
+    // ── Use Promise-based upload for better error handling ──
+    const result = await uploadToCloudinary(req.file.buffer, {
+      folder: "educarepoint-products",
+      resource_type: resourceType,
+      use_filename: true,
+      unique_filename: true,
+      // Timeout for Render free tier
+      timeout: 60000
+    });
 
-    const uploadStream = cloudinary.uploader.upload_stream(
-      {
-        folder: "educarepoint-products",
-        resource_type: resourceType,
-        use_filename: true,
-        unique_filename: true
-      },
-      (error, result) => {
+    console.log('Upload successful:', result.secure_url);
 
-        if (error) {
-          console.log(error);
-
-          return res.status(500).json({
-            success: false,
-            message: "Upload failed"
-          });
-        }
-
-        res.json({
-          success: true,
-          fileUrl: result.secure_url,
-          fileName: req.file.originalname,
-          fileSize: req.file.size
-        });
-
-      }
-    );
-
-    streamifier.createReadStream(req.file.buffer).pipe(uploadStream);
+    res.json({
+      success: true,
+      fileUrl: result.secure_url,
+      fileName: req.file.originalname,
+      fileSize: req.file.size
+    });
 
   } catch (err) {
-
-    console.log(err);
+    console.error('Upload route error:', err);
+    
+    // Specific error messages
+    if (err.message && err.message.includes('timeout')) {
+      return res.status(504).json({
+        success: false,
+        message: "Upload timed out. File may be too large."
+      });
+    }
+    
+    if (err.message && err.message.includes('authentication')) {
+      return res.status(500).json({
+        success: false,
+        message: "Cloudinary config error. Check env vars."
+      });
+    }
 
     res.status(500).json({
       success: false,
-      message: "Server Error"
+      message: err.message || "Upload failed"
     });
+  }
+});
 
+// ── NEW: Health check for upload route ──
+router.get("/health", (req, res) => {
+  res.json({ 
+    success: true, 
+    message: "Upload service ready",
+    cloudinary: !!cloudinary.config().cloud_name 
+  });
+});
+// TEMPORARY: Test Cloudinary connection
+router.get("/test-cloudinary", async (req, res) => {
+  try {
+    const result = await cloudinary.api.ping();
+    res.json({ success: true, cloudinary: result });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 

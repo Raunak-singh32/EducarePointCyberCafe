@@ -173,7 +173,7 @@ const Cart = () => {
         </div>
 
         {!showCheckout ? (
-          <button onClick={() => setShowCheckout(true)} className="checkout-btn">Proceed to Checkout</button>
+          <button onClick={() => setShowCheckout(true)} className="checkout-btn">Proceed to payment</button>
         ) : (
           <form onSubmit={handleCheckout} className="checkout-form">
 

@@ -180,55 +180,73 @@ const Services = () => {
 
   // ── Step 3: Create Order ──
   const createOrder = async (method) => {
-    setSubmitting(true);
-    try {
-      let fileUrl = '';
-      let fileName = '';
-      if (formData.file) {
+  setSubmitting(true);
+  try {
+    let fileUrl = '';
+    let fileName = '';
+    
+    // ── Upload file if exists ──
+    if (formData.file) {
+      try {
         const uploadData = new FormData();
         uploadData.append('image', formData.file);
         const uploadRes = await uploadAPI.uploadFile(uploadData);
         fileUrl = uploadRes.data.fileUrl;
         fileName = uploadRes.data.fileName || formData.file.name;
+        console.log('File uploaded:', fileUrl);
+      } catch (uploadErr) {
+        console.error('Upload failed:', uploadErr);
+        // Continue without file — don't block order
+        alert('File upload failed, but continuing without file...');
       }
-      
-      const price = calculatePrice();
-      const needsPageRange = formData.serviceType === 'print' || formData.serviceType === 'xerox';
-      const resolvedPages = needsPageRange
-        ? parsePageRange(formData.pageRange, detectedPages)
-        : 1;
-
-      const orderData = {
-        serviceType: formData.serviceType,
-        printType: formData.printType,
-        paperSize: formData.paperSize,
-        pages: resolvedPages,
-        pageRange: formData.pageRange,
-        copies: Number(formData.copies),
-        totalPrice: price,
-        customerName: formData.customerName,
-        customerPhone: formData.customerPhone,
-        deliveryType: formData.deliveryType,
-        deliveryAddress: formData.deliveryAddress,
-        pickupTime: formData.deliveryType === 'pickup' ? formData.pickupTime : '',
-        notes: formData.notes,
-        fileUrl,
-        fileName,
-        paymentMethod: method,
-        paymentStatus: method === 'cod' ? 'pending' : 'pending', // UPI will be verified by admin
-        items: selectedItems.map(i => ({ itemId: i._id, name: i.name, price: i.price, quantity: 1 }))
-      };
-      
-      const res = await orderAPI.create(orderData);
-      setOrderId(res.data.order._id);
-      setStep('success');
-    } catch (err) {
-      alert('Error creating order: ' + err.message);
-    } finally {
-      setSubmitting(false);
     }
-  };
+    
+    const price = calculatePrice();
+    const needsPageRange = formData.serviceType === 'print' || formData.serviceType === 'xerox';
+    const resolvedPages = needsPageRange
+      ? parsePageRange(formData.pageRange, detectedPages)
+      : 1;
 
+    const orderData = {
+      serviceType: formData.serviceType,
+      printType: formData.printType,
+      paperSize: formData.paperSize,
+      pages: resolvedPages,
+      pageRange: formData.pageRange,
+      copies: Number(formData.copies),
+      totalPrice: price,
+      customerName: formData.customerName,
+      customerPhone: formData.customerPhone,
+      deliveryType: formData.deliveryType,
+      address: formData.deliveryAddress || '',
+      pickupTime: formData.deliveryType === 'pickup' ? formData.pickupTime : '',
+      notes: formData.notes,
+      fileUrl,        // empty string if upload failed
+      fileName,       // empty string if upload failed
+      paymentMethod: method,
+      paymentStatus: 'pending',
+      items: selectedItems.map(i => ({ itemId: i._id, name: i.name, price: i.price, quantity: 1 }))
+    };
+    
+    console.log('Sending order:', orderData);
+    
+    const res = await orderAPI.create(orderData);
+    setOrderId(res.data.order._id);
+    setStep('success');
+    
+  } catch (err) {
+    console.error('Full error:', err);
+    if (err.response) {
+      console.error('Status:', err.response.status);
+      console.error('Data:', err.response.data);
+      alert(`Error: ${err.response.data.message || err.message}`);
+    } else {
+      alert('Network error. Please check your connection.');
+    }
+  } finally {
+    setSubmitting(false);
+  }
+};
   // ── Step 4: Upload Screenshot & Submit UPI Order ──
   const handleScreenshotUpload = (e) => {
     const file = e.target.files[0];
