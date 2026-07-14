@@ -184,8 +184,7 @@ const Services = () => {
   try {
     let fileUrl = '';
     let fileName = '';
-    
-    // ── Upload file if exists ──
+
     if (formData.file) {
       try {
         const uploadData = new FormData();
@@ -193,14 +192,12 @@ const Services = () => {
         const uploadRes = await uploadAPI.uploadFile(uploadData);
         fileUrl = uploadRes.data.fileUrl;
         fileName = uploadRes.data.fileName || formData.file.name;
-        console.log('File uploaded:', fileUrl);
       } catch (uploadErr) {
         console.error('Upload failed:', uploadErr);
-        // Continue without file — don't block order
         alert('File upload failed, but continuing without file...');
       }
     }
-    
+
     const price = calculatePrice();
     const needsPageRange = formData.serviceType === 'print' || formData.serviceType === 'xerox';
     const resolvedPages = needsPageRange
@@ -221,25 +218,22 @@ const Services = () => {
       address: formData.deliveryAddress || '',
       pickupTime: formData.deliveryType === 'pickup' ? formData.pickupTime : '',
       notes: formData.notes,
-      fileUrl,        // empty string if upload failed
-      fileName,       // empty string if upload failed
+      fileUrl,
+      fileName,
       paymentMethod: method,
       paymentStatus: 'pending',
       items: selectedItems.map(i => ({ itemId: i._id, name: i.name, price: i.price, quantity: 1 }))
     };
-    
-    console.log('Sending order:', orderData);
-    
+
+    // ── Single order creation ──
     const res = await orderAPI.create(orderData);
-    setOrderId(res.data.order._id);
+    const newOrderId = res.data.order._id;  // ← correct path
+
+    setOrderId(newOrderId);
+    notifyOwner(orderData, newOrderId);     // ← notify owner with correct ID
     setStep('success');
-    const createdOrder = await orderAPI.create(orderData);
-setOrderId(createdOrder.data._id);
+     return newOrderId;  
 
-notifyOwner(orderData, createdOrder.data._id); // ← add this line
-
-setStep('success');
-    
   } catch (err) {
     console.error('Full error:', err);
     if (err.response) {
@@ -285,16 +279,13 @@ setStep('success');
       alert('Please upload payment screenshot for verification');
       return;
     }
-    
     setUploading(true);
     try {
-      // First create the order
-      await createOrder('upi');
+      const newOrderId = await createOrder('upi');  // ← capture returned ID
       
-      // Then upload screenshot
       const formDataUpload = new FormData();
       formDataUpload.append('screenshot', screenshotFile);
-      await orderAPI.uploadPaymentScreenshot(orderId, formDataUpload);
+      await orderAPI.uploadPaymentScreenshot(newOrderId, formDataUpload);  // ← use it here
       
     } catch (err) {
       alert('Error: ' + err.message);
