@@ -15,8 +15,8 @@ const Services = () => {
     pageRange: '1',
     customerName: '',
     customerPhone: '',
-    deliveryType: 'pickup',      // ── NEW
-    deliveryAddress: '',         // ── NEW
+    deliveryType: 'pickup',
+    deliveryAddress: '',
     pickupTime: 'Today 5 PM',
     notes: '',
     file: null
@@ -25,8 +25,7 @@ const Services = () => {
   const [selectedItems, setSelectedItems] = useState([]);
   const [availableItems, setAvailableItems] = useState([]);
   const [itemSearch, setItemSearch] = useState('');
-  
-  // ── NEW: Multi-step flow ──
+
   const [step, setStep] = useState('form'); // 'form' | 'payment' | 'success'
   const [paymentMethod, setPaymentMethod] = useState(''); // 'upi' | 'cod'
   const [orderId, setOrderId] = useState('');
@@ -34,9 +33,10 @@ const Services = () => {
   const [screenshotPreview, setScreenshotPreview] = useState('');
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  
+
   const [detectedPages, setDetectedPages] = useState(null);
   const [detectingPages, setDetectingPages] = useState(false);
+  const [savedOrderData, setSavedOrderData] = useState(null); // for WhatsApp button on success screen
 
   // Auto-fill from logged in user
   useEffect(() => {
@@ -121,12 +121,12 @@ const Services = () => {
   const calculatePrice = () => {
     let pricePerPage = 0;
     switch (formData.serviceType) {
-      case 'print':  pricePerPage = formData.printType === 'color' ? 5 : 2; break;
-      case 'xerox':  pricePerPage = 1;  break;
-      case 'scan':   pricePerPage = 5;  break;
+      case 'print':      pricePerPage = formData.printType === 'color' ? 5 : 2; break;
+      case 'xerox':      pricePerPage = 1;  break;
+      case 'scan':       pricePerPage = 5;  break;
       case 'lamination': pricePerPage = 30; break;
       case 'binding':    pricePerPage = 50; break;
-      default: pricePerPage = 2;
+      default:           pricePerPage = 2;
     }
     if (formData.paperSize === 'A3')    pricePerPage *= 2;
     if (formData.paperSize === 'Legal') pricePerPage *= 1.5;
@@ -138,18 +138,15 @@ const Services = () => {
 
     const servicePrice = pricePerPage * pageCount * formData.copies;
     const itemsPrice = selectedItems.reduce((sum, item) => sum + item.price, 0);
-    
-    // ── NEW: Delivery charge ──
     const deliveryCharge = formData.deliveryType === 'delivery' ? 15 : 0;
-    
+
     return servicePrice + itemsPrice + deliveryCharge;
   };
 
   // ── Step 1: Go to Payment Selection ──
   const handleProceedToPayment = (e) => {
     e.preventDefault();
-    
-    // Validation
+
     if (!formData.customerName.trim() || !formData.customerPhone.trim()) {
       alert('Please fill in your name and phone number');
       return;
@@ -162,7 +159,7 @@ const Services = () => {
       alert('Please enter delivery address');
       return;
     }
-    
+
     setStep('payment');
     window.scrollTo(0, 0);
   };
@@ -170,105 +167,88 @@ const Services = () => {
   // ── Step 2: Handle Payment Method Selection ──
   const handlePaymentMethodSelect = async (method) => {
     setPaymentMethod(method);
-    
     if (method === 'cod') {
-      // COD: Create order immediately
       await createOrder('cod');
     }
-    // If UPI: Stay on payment screen, show QR
+    // If UPI: stay on screen, show QR
   };
 
   // ── Step 3: Create Order ──
   const createOrder = async (method) => {
-  setSubmitting(true);
-  try {
-    let fileUrl = '';
-    let fileName = '';
+    setSubmitting(true);
+    try {
+      let fileUrl = '';
+      let fileName = '';
 
-    if (formData.file) {
-      try {
-        const uploadData = new FormData();
-        uploadData.append('image', formData.file);
-        const uploadRes = await uploadAPI.uploadFile(uploadData);
-        fileUrl = uploadRes.data.fileUrl;
-        fileName = uploadRes.data.fileName || formData.file.name;
-      } catch (uploadErr) {
-        console.error('Upload failed:', uploadErr);
-        alert('File upload failed, but continuing without file...');
+      if (formData.file) {
+        try {
+          const uploadData = new FormData();
+          uploadData.append('image', formData.file);
+          const uploadRes = await uploadAPI.uploadFile(uploadData);
+          fileUrl = uploadRes.data.fileUrl;
+          fileName = uploadRes.data.fileName || formData.file.name;
+        } catch (uploadErr) {
+          console.error('Upload failed:', uploadErr);
+          alert('File upload failed, but continuing without file...');
+        }
       }
+
+      const price = calculatePrice();
+      const needsPageRange = formData.serviceType === 'print' || formData.serviceType === 'xerox';
+      const resolvedPages = needsPageRange
+        ? parsePageRange(formData.pageRange, detectedPages)
+        : 1;
+
+      const orderData = {
+        serviceType: formData.serviceType,
+        printType: formData.printType,
+        paperSize: formData.paperSize,
+        pages: resolvedPages,
+        pageRange: formData.pageRange,
+        copies: Number(formData.copies),
+        totalPrice: price,
+        customerName: formData.customerName,
+        customerPhone: formData.customerPhone,
+        deliveryType: formData.deliveryType,
+        address: formData.deliveryAddress || '',
+        pickupTime: formData.deliveryType === 'pickup' ? formData.pickupTime : '',
+        notes: formData.notes,
+        fileUrl,
+        fileName,
+        paymentMethod: method,
+        paymentStatus: 'pending',
+        items: selectedItems.map(i => ({ itemId: i._id, name: i.name, price: i.price, quantity: 1 }))
+      };
+
+      // ── Single order creation ──
+      const res = await orderAPI.create(orderData);
+      const newOrderId = res.data.order._id;
+
+      setOrderId(newOrderId);
+      setSavedOrderData({ ...orderData, id: newOrderId }); // ← save for WhatsApp button
+      setStep('success');
+      return newOrderId; // ← UPI screenshot upload uses this
+
+    } catch (err) {
+      console.error('Full error:', err);
+      if (err.response) {
+        console.error('Status:', err.response.status);
+        console.error('Data:', err.response.data);
+        alert(`Error: ${err.response.data.message || err.message}`);
+      } else {
+        alert('Network error. Please check your connection.');
+      }
+    } finally {
+      setSubmitting(false);
     }
+  };
 
-    const price = calculatePrice();
-    const needsPageRange = formData.serviceType === 'print' || formData.serviceType === 'xerox';
-    const resolvedPages = needsPageRange
-      ? parsePageRange(formData.pageRange, detectedPages)
-      : 1;
-
-    const orderData = {
-      serviceType: formData.serviceType,
-      printType: formData.printType,
-      paperSize: formData.paperSize,
-      pages: resolvedPages,
-      pageRange: formData.pageRange,
-      copies: Number(formData.copies),
-      totalPrice: price,
-      customerName: formData.customerName,
-      customerPhone: formData.customerPhone,
-      deliveryType: formData.deliveryType,
-      address: formData.deliveryAddress || '',
-      pickupTime: formData.deliveryType === 'pickup' ? formData.pickupTime : '',
-      notes: formData.notes,
-      fileUrl,
-      fileName,
-      paymentMethod: method,
-      paymentStatus: 'pending',
-      items: selectedItems.map(i => ({ itemId: i._id, name: i.name, price: i.price, quantity: 1 }))
-    };
-
-    // ── Single order creation ──
-    const res = await orderAPI.create(orderData);
-    const newOrderId = res.data.order._id;  // ← correct path
-
-    setOrderId(newOrderId);
-    notifyOwner(orderData, newOrderId);     // ← notify owner with correct ID
-    setStep('success');
-     return newOrderId;  
-
-  } catch (err) {
-    console.error('Full error:', err);
-    if (err.response) {
-      console.error('Status:', err.response.status);
-      console.error('Data:', err.response.data);
-      alert(`Error: ${err.response.data.message || err.message}`);
-    } else {
-      alert('Network error. Please check your connection.');
-    }
-  } finally {
-    setSubmitting(false);
-  }
-};
-   const notifyOwner = (orderData, createdOrderId) => {
-  const OWNER_PHONE = '919331443939'; // owner's number with country code, no +
-  const message = 
-`🔔 *New Order - Educare Point*
-
-📋 Order ID: ${createdOrderId}
-👤 Customer: ${orderData.customerName}
-📞 Phone: ${orderData.customerPhone}
-🖨️ Service: ${orderData.serviceType.toUpperCase()}
-📦 Delivery: ${orderData.deliveryType === 'pickup' ? 'Pickup' : 'Home Delivery'}
-💰 Total: ₹${orderData.totalPrice}
-💳 Payment: ${orderData.paymentMethod.toUpperCase()}`;
-
-  const url = `https://wa.me/${OWNER_PHONE}?text=${encodeURIComponent(message)}`;
-  window.open(url, '_blank');
-};
   // ── Step 4: Upload Screenshot & Submit UPI Order ──
   const handleScreenshotUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
     setScreenshotFile(file);
-    
+
     const reader = new FileReader();
     reader.onloadend = () => setScreenshotPreview(reader.result);
     reader.readAsDataURL(file);
@@ -281,12 +261,12 @@ const Services = () => {
     }
     setUploading(true);
     try {
-      const newOrderId = await createOrder('upi');  // ← capture returned ID
-      
+      const newOrderId = await createOrder('upi'); // ← capture returned ID
+
       const formDataUpload = new FormData();
       formDataUpload.append('screenshot', screenshotFile);
-      await orderAPI.uploadPaymentScreenshot(newOrderId, formDataUpload);  // ← use it here
-      
+      await orderAPI.uploadPaymentScreenshot(newOrderId, formDataUpload); // ← use it here
+
     } catch (err) {
       alert('Error: ' + err.message);
     } finally {
@@ -319,6 +299,7 @@ const Services = () => {
     setStep('form');
     setPaymentMethod('');
     setOrderId('');
+    setSavedOrderData(null);
     setScreenshotFile(null);
     setScreenshotPreview('');
     setSelectedItems([]);
@@ -341,7 +322,6 @@ const Services = () => {
     });
   };
 
-  // ─── DELIVERY CHARGE DISPLAY ───
   const deliveryCharge = formData.deliveryType === 'delivery' ? 15 : 0;
 
   // ═══════════════════════════════════════════════════════════════
@@ -350,15 +330,15 @@ const Services = () => {
   if (step === 'success') {
     const isUPI = paymentMethod === 'upi';
     const isCOD = paymentMethod === 'cod';
-    
+
     return (
       <div className="success-page">
         <div className="success-icon">✅</div>
         <h2>Order {isUPI ? 'Submitted!' : 'Confirmed!'}</h2>
-        
+
         <div className="order-summary-card">
-          <h3>Order ID: {orderId.slice(-6)}</h3>
-          
+          <h3>Order ID: #{orderId.slice(-6)}</h3>
+
           <div className="summary-row">
             <span>Service:</span>
             <span>{formData.serviceType.toUpperCase()}</span>
@@ -385,7 +365,7 @@ const Services = () => {
             <span>Phone:</span>
             <span>{formData.customerPhone}</span>
           </div>
-          
+
           {selectedItems.length > 0 && (
             <div className="items-summary">
               <p><strong>Added Items:</strong></p>
@@ -394,8 +374,7 @@ const Services = () => {
               ))}
             </div>
           )}
-          
-          {/* ── UPI: Waiting for verification ── */}
+
           {isUPI && (
             <div className="verification-notice">
               <div className="notice-icon">⏳</div>
@@ -405,8 +384,7 @@ const Services = () => {
               <p className="notice-hint">You'll receive a WhatsApp confirmation shortly.</p>
             </div>
           )}
-          
-          {/* ── COD: Direct confirmation ── */}
+
           {isCOD && (
             <div className="cod-notice">
               <div className="notice-icon">💰</div>
@@ -416,7 +394,42 @@ const Services = () => {
             </div>
           )}
         </div>
-        
+
+        {/* ── WhatsApp Notify Button — customer taps manually, never blocked ── */}
+        {savedOrderData && (
+          <button
+            onClick={() => {
+              const OWNER_PHONE = '919331443939';
+              const msg =
+`🔔 *New Order - Educare Point*
+
+📋 Order ID: #${orderId.slice(-6)}
+👤 Customer: ${savedOrderData.customerName}
+📞 Phone: ${savedOrderData.customerPhone}
+🖨️ Service: ${savedOrderData.serviceType.toUpperCase()}
+📦 Delivery: ${savedOrderData.deliveryType === 'pickup' ? 'Pickup' : 'Home Delivery'}
+💰 Total: ₹${savedOrderData.totalPrice}
+💳 Payment: ${savedOrderData.paymentMethod.toUpperCase()}`;
+              window.open(`https://wa.me/${OWNER_PHONE}?text=${encodeURIComponent(msg)}`, '_blank');
+            }}
+            style={{
+              width: '100%',
+              padding: '14px',
+              background: '#25d366',
+              color: 'white',
+              border: 'none',
+              borderRadius: '999px',
+              fontSize: '1rem',
+              fontWeight: '700',
+              cursor: 'pointer',
+              marginBottom: '10px',
+              boxShadow: '0 6px 20px rgba(37,211,102,0.35)'
+            }}
+          >
+            📲 Notify Shop Owner on WhatsApp
+          </button>
+        )}
+
         <button onClick={resetForm} className="new-order-btn">📝 Place New Order</button>
       </div>
     );
@@ -429,10 +442,9 @@ const Services = () => {
     return (
       <div className="services-page payment-step">
         <h2>💳 Choose Payment Method</h2>
-        
+
         <div className="payment-methods">
-          {/* ── UPI Option ── */}
-          <div 
+          <div
             className={`payment-card ${paymentMethod === 'upi' ? 'selected' : ''}`}
             onClick={() => handlePaymentMethodSelect('upi')}
           >
@@ -440,9 +452,8 @@ const Services = () => {
             <h3>Pay Now (UPI)</h3>
             <p>Scan QR & pay instantly</p>
           </div>
-          
-          {/* ── COD Option ── */}
-          <div 
+
+          <div
             className={`payment-card ${paymentMethod === 'cod' ? 'selected' : ''}`}
             onClick={() => handlePaymentMethodSelect('cod')}
           >
@@ -451,20 +462,19 @@ const Services = () => {
             <p>Pay when you receive</p>
           </div>
         </div>
-        
-        {/* ── UPI QR Code Section ── */}
+
         {paymentMethod === 'upi' && (
           <div className="upi-payment-section">
             <div className="upi-amount">
               <h3>Amount to Pay: ₹{calculatePrice()}</h3>
             </div>
-            
+
             <div className="upi-details">
               <div className="upi-id-box">
                 <p className="upi-label">UPI ID:</p>
                 <div className="upi-copy-row">
                   <span className="upi-id">pointeducare@ybl</span>
-                  <button 
+                  <button
                     className="copy-btn"
                     onClick={() => {
                       navigator.clipboard.writeText('pointeducare@ybl');
@@ -475,12 +485,12 @@ const Services = () => {
                   </button>
                 </div>
               </div>
-              
+
               <div className="qr-section">
                 <p className="qr-label">Or scan QR code:</p>
-                <img 
-                  src="/phonepe-qr.png" 
-                  alt="PhonePe QR" 
+                <img
+                  src="/phonepe-qr.png"
+                  alt="PhonePe QR"
                   className="qr-code"
                   onError={(e) => {
                     e.target.style.display = 'none';
@@ -490,16 +500,15 @@ const Services = () => {
                 <p className="qr-name">Ajay Kumar Ram</p>
               </div>
             </div>
-            
-            {/* ── Screenshot Upload ── */}
+
             <div className="screenshot-upload">
               <h4>📤 Upload Payment Screenshot</h4>
               <p className="upload-hint">After paying, take a screenshot and upload here for verification</p>
-              
+
               <div className="file-upload-box">
-                <input 
-                  type="file" 
-                  accept="image/*" 
+                <input
+                  type="file"
+                  accept="image/*"
                   onChange={handleScreenshotUpload}
                   id="screenshot-input"
                   className="hidden-input"
@@ -515,16 +524,16 @@ const Services = () => {
                   )}
                 </label>
               </div>
-              
-              <button 
+
+              <button
                 onClick={handleUPIOrderSubmit}
                 className="submit-payment-btn"
                 disabled={uploading || submitting}
               >
-                {uploading || submitting ? '⏳ Processing...' : '✅ I\'ve Paid - Submit Order'}
+                {uploading || submitting ? '⏳ Processing...' : "✅ I've Paid - Submit Order"}
               </button>
-              
-              <button 
+
+              <button
                 onClick={() => setPaymentMethod('')}
                 className="back-btn"
               >
@@ -533,14 +542,14 @@ const Services = () => {
             </div>
           </div>
         )}
-        
+
         {paymentMethod === 'cod' && submitting && (
           <div className="processing-overlay">
             <div className="spinner"></div>
             <p>Creating your order...</p>
           </div>
         )}
-        
+
         <button onClick={() => setStep('form')} className="back-btn full-width">
           ← Back to Order Details
         </button>
@@ -601,23 +610,23 @@ const Services = () => {
               <label>Print Type:</label>
               <div className="radio-group">
                 <label>
-                  <input 
-                    type="radio" 
-                    name="printType" 
-                    value="black-white" 
-                    checked={formData.printType === 'black-white'} 
-                    onChange={handleChange} 
-                  /> 
+                  <input
+                    type="radio"
+                    name="printType"
+                    value="black-white"
+                    checked={formData.printType === 'black-white'}
+                    onChange={handleChange}
+                  />
                   Black & White (₹2/page)
                 </label>
                 <label>
-                  <input 
-                    type="radio" 
-                    name="printType" 
-                    value="color" 
-                    checked={formData.printType === 'color'} 
-                    onChange={handleChange} 
-                  /> 
+                  <input
+                    type="radio"
+                    name="printType"
+                    value="color"
+                    checked={formData.printType === 'color'}
+                    onChange={handleChange}
+                  />
                   Color (₹5/page)
                 </label>
               </div>
@@ -681,33 +690,33 @@ const Services = () => {
         <div className="form-group">
           <label>Add Stationery Items:</label>
           <div className="item-search-box">
-            <input 
-              type="text" 
-              placeholder="🔍 Type to search items..." 
-              value={itemSearch} 
-              onChange={(e) => setItemSearch(e.target.value)} 
-              className="item-search-input" 
+            <input
+              type="text"
+              placeholder="🔍 Type to search items..."
+              value={itemSearch}
+              onChange={(e) => setItemSearch(e.target.value)}
+              className="item-search-input"
             />
             {itemSearch && (
               <div className="item-dropdown">
                 {availableItems
-                  .filter(item => 
-                    item.name.toLowerCase().includes(itemSearch.toLowerCase()) && 
+                  .filter(item =>
+                    item.name.toLowerCase().includes(itemSearch.toLowerCase()) &&
                     !selectedItems.find(i => i._id === item._id)
                   )
                   .slice(0, 5)
                   .map(item => (
-                    <div 
-                      key={item._id} 
-                      className="dropdown-item" 
+                    <div
+                      key={item._id}
+                      className="dropdown-item"
                       onClick={() => { addItem(item); setItemSearch(''); }}
                     >
                       <span>{item.name}</span>
                       <span>₹{item.price}</span>
                     </div>
                   ))}
-                {availableItems.filter(item => 
-                  item.name.toLowerCase().includes(itemSearch.toLowerCase()) && 
+                {availableItems.filter(item =>
+                  item.name.toLowerCase().includes(itemSearch.toLowerCase()) &&
                   !selectedItems.find(i => i._id === item._id)
                 ).length === 0 && (
                   <div className="dropdown-item no-match">No items found</div>
@@ -731,41 +740,41 @@ const Services = () => {
         {/* ── Customer Details ── */}
         <div className="form-group">
           <label>Your Name: *</label>
-          <input 
-            type="text" 
-            name="customerName" 
-            required 
-            value={formData.customerName} 
-            onChange={handleChange} 
-            placeholder="Enter your name" 
+          <input
+            type="text"
+            name="customerName"
+            required
+            value={formData.customerName}
+            onChange={handleChange}
+            placeholder="Enter your name"
           />
         </div>
 
         <div className="form-group">
           <label>Phone Number: *</label>
-          <input 
-            type="tel" 
-            name="customerPhone" 
-            required 
-            value={formData.customerPhone} 
-            onChange={handleChange} 
-            placeholder="WhatsApp number" 
-            pattern="[0-9]{10}" 
-            title="Enter 10 digit phone number" 
+          <input
+            type="tel"
+            name="customerPhone"
+            required
+            value={formData.customerPhone}
+            onChange={handleChange}
+            placeholder="WhatsApp number"
+            pattern="[0-9]{10}"
+            title="Enter 10 digit phone number"
           />
         </div>
 
-        {/* ── NEW: Delivery Method ── */}
+        {/* ── Delivery Method ── */}
         <div className="form-group">
           <label>Delivery Method: *</label>
           <div className="radio-group delivery-options">
             <label className={`delivery-option ${formData.deliveryType === 'pickup' ? 'selected' : ''}`}>
-              <input 
-                type="radio" 
-                name="deliveryType" 
-                value="pickup" 
-                checked={formData.deliveryType === 'pickup'} 
-                onChange={handleChange} 
+              <input
+                type="radio"
+                name="deliveryType"
+                value="pickup"
+                checked={formData.deliveryType === 'pickup'}
+                onChange={handleChange}
               />
               <span className="delivery-icon">🏪</span>
               <div className="delivery-info">
@@ -774,12 +783,12 @@ const Services = () => {
               </div>
             </label>
             <label className={`delivery-option ${formData.deliveryType === 'delivery' ? 'selected' : ''}`}>
-              <input 
-                type="radio" 
-                name="deliveryType" 
-                value="delivery" 
-                checked={formData.deliveryType === 'delivery'} 
-                onChange={handleChange} 
+              <input
+                type="radio"
+                name="deliveryType"
+                value="delivery"
+                checked={formData.deliveryType === 'delivery'}
+                onChange={handleChange}
               />
               <span className="delivery-icon">🚚</span>
               <div className="delivery-info">
@@ -790,7 +799,7 @@ const Services = () => {
           </div>
         </div>
 
-        {/* ── Pickup Time (only if pickup) ── */}
+        {/* ── Pickup Time ── */}
         {formData.deliveryType === 'pickup' && (
           <div className="form-group">
             <label>Pickup Time:</label>
@@ -807,15 +816,15 @@ const Services = () => {
           </div>
         )}
 
-        {/* ── Delivery Address (only if delivery) ── */}
+        {/* ── Delivery Address ── */}
         {formData.deliveryType === 'delivery' && (
           <div className="form-group">
             <label>Delivery Address: *</label>
-            <textarea 
-              name="deliveryAddress" 
-              rows="3" 
-              value={formData.deliveryAddress} 
-              onChange={handleChange} 
+            <textarea
+              name="deliveryAddress"
+              rows="3"
+              value={formData.deliveryAddress}
+              onChange={handleChange}
               placeholder="Enter your full address with landmark..."
               required={formData.deliveryType === 'delivery'}
             />
@@ -824,12 +833,12 @@ const Services = () => {
 
         <div className="form-group">
           <label>Special Instructions:</label>
-          <textarea 
-            name="notes" 
-            rows="3" 
-            value={formData.notes} 
-            onChange={handleChange} 
-            placeholder="Any special requests..." 
+          <textarea
+            name="notes"
+            rows="3"
+            value={formData.notes}
+            onChange={handleChange}
+            placeholder="Any special requests..."
           />
         </div>
 

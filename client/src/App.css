@@ -4835,3 +4835,391 @@ html:has(.navbar.navbar-hidden)::after {
   font-size: 13px;
   margin: 5px 0 0 0;
 }
+
+/* ══════════════════════════════════════════════════════════════
+   MOBILE RESPONSIVE — SERVICE / PAYMENT / ORDER HISTORY FLOW
+   Added as a consolidated block so nothing existing is touched.
+   These specifically fix the gaps in the service order journey.
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── Tablet (≤ 768px): Service form & payment basics ── */
+@media (max-width: 768px) {
+  .service-form {
+    padding: 24px 20px;
+    border-radius: var(--radius-lg);
+  }
+
+  .payment-step {
+    padding: 0 4px;
+  }
+
+  .payment-methods {
+    gap: 12px;
+  }
+
+  .payment-card {
+    padding: 18px 14px;
+  }
+
+  .upi-payment-section {
+    padding: 18px 16px;
+  }
+
+  .order-summary-card {
+    padding: 18px 16px;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .admin-form {
+    padding: 24px 18px;
+  }
+
+  /* History page order cards */
+  .history-page .order-card {
+    padding: 16px;
+  }
+}
+
+/* ── Small phones (≤ 480px): Tighten everything ── */
+@media (max-width: 480px) {
+
+  /* ── Service form ── */
+  .service-form {
+    padding: 18px 14px;
+    border-radius: var(--radius-md);
+    box-shadow: none;
+  }
+
+  .services-page h2 {
+    font-size: 1.4rem;
+    margin: 20px 0 16px;
+  }
+
+  /* ── Delivery options: stack vertically ── */
+  .delivery-options {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .delivery-option {
+    min-width: unset;
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 12px;
+  }
+
+  .delivery-icon {
+    font-size: 20px;
+  }
+
+  .delivery-info strong {
+    font-size: 0.9rem;
+  }
+
+  /* ── Price box: stack on small screens ── */
+  .price-box {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    padding: 12px 14px;
+  }
+
+  .price-box h3 {
+    font-size: 1.1rem;
+  }
+
+  .price-box p {
+    white-space: normal;
+    font-size: 0.75rem;
+  }
+
+  /* ── Payment step ── */
+  .payment-step {
+    padding: 0 2px;
+  }
+
+  .payment-step h2 {
+    font-size: 1.3rem;
+    text-align: center;
+    margin-bottom: 16px;
+  }
+
+  /* ── Payment cards: stack vertically ── */
+  .payment-methods {
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .payment-card {
+    padding: 14px 16px;
+    border-radius: 14px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+    text-align: left;
+  }
+
+  .payment-icon {
+    font-size: 28px;
+    margin-bottom: 0;
+    flex-shrink: 0;
+  }
+
+  .payment-card h3 {
+    font-size: 0.95rem;
+    margin-bottom: 2px;
+  }
+
+  .payment-card p {
+    font-size: 0.78rem;
+  }
+
+  /* ── UPI section ── */
+  .upi-payment-section {
+    padding: 14px 12px;
+    border-radius: 14px;
+  }
+
+  .upi-amount h3 {
+    font-size: 1.1rem;
+  }
+
+  .upi-id-box {
+    padding: 12px 14px;
+    border-radius: 12px;
+  }
+
+  .upi-copy-row {
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .upi-id {
+    font-size: 13px;
+    word-break: break-all;
+    flex: 1;
+  }
+
+  .copy-btn {
+    padding: 6px 12px;
+    font-size: 0.78rem;
+    flex-shrink: 0;
+  }
+
+  .qr-code {
+    width: 160px;
+  }
+
+  /* ── Screenshot upload ── */
+  .screenshot-upload {
+    padding-top: 16px;
+  }
+
+  .screenshot-upload h4 {
+    font-size: 0.95rem;
+  }
+
+  .upload-hint {
+    font-size: 0.78rem;
+  }
+
+  .upload-label {
+    padding: 20px 14px;
+    min-height: 110px;
+  }
+
+  .upload-icon {
+    font-size: 28px;
+    margin-bottom: 6px;
+  }
+
+  .submit-payment-btn {
+    font-size: 0.9rem;
+    padding: 13px;
+    border-radius: 12px;
+  }
+
+  .back-btn {
+    font-size: 0.82rem;
+    padding: 10px;
+    border-radius: 12px;
+  }
+
+  /* ── Success page ── */
+  .success-page {
+    padding: 24px 8px;
+  }
+
+  .success-page h2 {
+    font-size: 1.5rem;
+    margin-bottom: 12px;
+  }
+
+  .success-icon {
+    font-size: 48px;
+    margin-bottom: 6px;
+  }
+
+  .order-summary-card {
+    padding: 14px 12px;
+    border-radius: 14px;
+    margin: 14px 0;
+    text-align: left;
+  }
+
+  .order-summary-card h3 {
+    font-size: 1rem;
+    margin-bottom: 10px;
+  }
+
+  .summary-row {
+    padding: 6px 0;
+    font-size: 0.85rem;
+  }
+
+  .verification-notice,
+  .cod-notice {
+    padding: 14px 12px;
+    border-radius: 12px;
+    margin-top: 14px;
+  }
+
+  .verification-notice h4,
+  .cod-notice h4 {
+    font-size: 0.95rem;
+    margin-bottom: 6px;
+  }
+
+  .verification-notice p,
+  .cod-notice p {
+    font-size: 0.82rem;
+    margin: 4px 0;
+  }
+
+  .notice-icon {
+    font-size: 28px;
+    margin-bottom: 6px;
+  }
+
+  .new-order-btn {
+    font-size: 0.9rem;
+    padding: 13px;
+    margin-top: 14px;
+  }
+
+  /* ── Order history page ── */
+  .history-page {
+    padding: 0 2px;
+  }
+
+  .history-page h2 {
+    font-size: 1.4rem;
+    text-align: center;
+    margin-bottom: 6px;
+  }
+
+  .search-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .search-form input {
+    width: 100%;
+    padding: 12px 14px;
+    font-size: 0.95rem;
+    border-radius: 12px;
+  }
+
+  .search-form button {
+    width: 100%;
+    padding: 12px;
+    font-size: 0.95rem;
+    border-radius: 12px;
+    min-height: 44px;
+  }
+
+  .order-card {
+    padding: 14px 12px;
+    border-radius: 14px;
+    margin-bottom: 12px;
+  }
+
+  .order-card h4 {
+    font-size: 0.95rem;
+  }
+
+  .order-card p {
+    font-size: 0.82rem;
+  }
+
+  /* ── Admin form row: single column ── */
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .admin-form {
+    padding: 16px 12px;
+    border-radius: 16px;
+  }
+
+  /* ── Radio group: stack on mobile ── */
+  .radio-group {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  /* ── Page range hint: stack on mobile ── */
+  .page-range-hint {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+}
+
+/* ── Very small phones (≤ 360px): Micro adjustments ── */
+@media (max-width: 360px) {
+  .service-form {
+    padding: 14px 10px;
+  }
+
+  .payment-card {
+    padding: 12px;
+  }
+
+  .payment-card h3 {
+    font-size: 0.88rem;
+  }
+
+  .upi-id {
+    font-size: 11px;
+  }
+
+  .order-summary-card {
+    padding: 12px 10px;
+  }
+
+  .summary-row {
+    font-size: 0.78rem;
+  }
+
+  .success-page h2 {
+    font-size: 1.2rem;
+  }
+
+  .submit-payment-btn,
+  .new-order-btn,
+  .submit-btn {
+    font-size: 0.85rem;
+    padding: 12px;
+  }
+}
