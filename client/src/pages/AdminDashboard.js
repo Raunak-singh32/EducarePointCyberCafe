@@ -247,8 +247,8 @@ const AdminDashboard = () => {
             )}
             <p><strong>Customer:</strong> {order.customerName} ({order.customerPhone})</p>
             <p><strong>Type:</strong> {order.deliveryType === 'delivery' ? '🚚 Home Delivery' : '🏪 Pickup'}</p>
-            {order.deliveryType === 'delivery' && order.deliveryAddress && (
-              <p><strong>📍 Address:</strong> {order.deliveryAddress}</p>
+            {order.deliveryType === 'delivery' && order.address && (
+              <p><strong>📍 Address:</strong> {order.address}</p>
             )}
             {order.deliveryType !== 'delivery' && order.pickupTime && (
               <p><strong>⏰ Pickup Time:</strong> {order.pickupTime}</p>
