@@ -11,6 +11,7 @@ const AdminDashboard = () => {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [imagePreview, setImagePreview] = useState('');
+  const [productSearch, setProductSearch] = useState('');
   const [formData, setFormData] = useState({
     name: '', category: 'pens', price: '', quantity: '', description: '', image: '', isPopular: false, isNew: false
   });
@@ -177,10 +178,27 @@ const AdminDashboard = () => {
             </form>
           )}
 
+          {/* ── Product Search ── */}
+          <div className="admin-search-bar">
+            <span className="admin-search-icon">🔍</span>
+            <input
+              type="text"
+              placeholder="Search product by name..."
+              value={productSearch}
+              onChange={e => setProductSearch(e.target.value)}
+              className="admin-search-input"
+            />
+            {productSearch && (
+              <button className="admin-search-clear" onClick={() => setProductSearch('')}>✕</button>
+            )}
+          </div>
+
           <table className="product-table">
             <thead><tr><th>Name</th><th>Category</th><th>Price</th><th>Stock</th><th>Status</th><th>Actions</th></tr></thead>
             <tbody>
-              {products.map(p => (
+              {products
+                .filter(p => p.name.toLowerCase().includes(productSearch.toLowerCase()))
+                .map(p => (
                 <tr key={p._id}>
                   <td>{p.name}</td><td>{p.category}</td><td>₹{p.price}</td><td>{p.displayQuantity}</td>
                   <td><span className={`status ${p.stockStatus}`}>{p.stockStatus}</span></td>

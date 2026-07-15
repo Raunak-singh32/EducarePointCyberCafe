@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import ProductList from './pages/ProductList';
 import Services from './pages/Services';
@@ -87,6 +87,33 @@ function Navbar() {
   const { cart } = useCart();
   const { user, logout } = useAuth();
 
+  // ── SECRET ADMIN SHORTCUT: hold A + D + M simultaneously ──
+  // No visible button — only you and the admin know this
+  useEffect(() => {
+    const pressedKeys = new Set();
+
+    const handleKeyDown = (e) => {
+      if (!e.key) return;
+      pressedKeys.add(e.key.toLowerCase());
+      if (pressedKeys.has('a') && pressedKeys.has('d') && pressedKeys.has('m')) {
+        pressedKeys.clear();
+        navigate('/admin-login');
+      }
+    };
+
+    const handleKeyUp = (e) => {
+      if (!e.key) return;
+      pressedKeys.delete(e.key.toLowerCase());
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, [navigate]);
+
   const handleUserClick = () => {
     if (user) {
       if (window.confirm(`Logout from ${user.name}?`)) {
@@ -129,7 +156,6 @@ function Navbar() {
       <button onClick={() => navigate('/cart')} className="cart-btn">
         🛒 Cart {cart.length > 0 && <span className="cart-badge">{cart.reduce((sum, item) => sum + item.quantity, 0)}</span>}
       </button>
-      <button onClick={() => navigate('/admin-login')} className="admin-btn">🔐 Admin</button>
     </div>
   );
 }
