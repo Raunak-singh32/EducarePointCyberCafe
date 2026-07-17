@@ -49,13 +49,16 @@ function AppContent() {
       <nav className={`navbar ${navHidden ? 'navbar-hidden' : ''}`}>
         <Navbar />
       </nav>
-        {/* ── Printout Badge ── */}
-      <div
-        className={`printout-badge ${navHidden ? 'badge-hidden' : ''}`}
-        onClick={() => navigate('/services')}
-        title="Click to place a print order"
-      >
-        🖨️ PRINTOUT
+      {/* ── Badges Row: Trade Licence + Printout side by side ── */}
+      <div className={`badges-row ${navHidden ? 'badge-hidden' : ''}`}>
+        <div className="trade-licence-badge">✓ TRADE LICENCE</div>
+        <div
+          className="printout-badge"
+          onClick={() => navigate('/services')}
+          title="Click to place a print order"
+        >
+          🖨️ PRINTOUT
+        </div>
       </div>
 
       <div className="page-fade-wrapper" key={location.pathname}>

@@ -3526,19 +3526,35 @@ white-space: nowrap;
 }
 
 /* ── BASE (all screens) ── */
-html::after {
-  content: '✓  TRADE  LICENCE';
+/* ── BADGES ROW: Trade Licence + Printout side by side ── */
+.badges-row {
   position: fixed;
-  top: 78px;
+  top: 82px;
   left: 14px;
   z-index: 199;
-  pointer-events: none;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  transition:
+    opacity  0.35s ease,
+    transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
 
+.badges-row.badge-hidden {
+  opacity: 0;
+  transform: translateY(-14px);
+  pointer-events: none;
+}
+
+/* ── Trade Licence badge (was html::after) ── */
+.trade-licence-badge {
   display: block;
   padding: 9px 15px;
   border-radius: 12px;
   border: 1.5px solid rgba(32, 201, 151, 0.65);
   white-space: nowrap;
+  pointer-events: none;
 
   background: linear-gradient(
     135deg,
@@ -3548,7 +3564,6 @@ html::after {
     #20c997 100%
   );
 
-  /* Explicit resting values so transition can override after fade-in */
   opacity: 1;
   transform: translateY(0);
 
@@ -3561,28 +3576,19 @@ html::after {
     0 0 10px rgba(255, 255, 255, 0.65),
     0 1px 2px rgba(0, 0, 0, 0.5);
 
-  /* fade-in on load (backwards = only pre-state, doesn't block transition after) */
   animation:
     licenceFadeIn 0.65s cubic-bezier(0.22, 1, 0.36, 1) backwards,
     licenceGlowPulse 2.8s ease-in-out infinite 0.65s;
-
-  /* hide/show transition — matches navbar's 0.35s timing */
-  transition:
-    opacity  0.35s ease,
-    transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* ── SCROLL DOWN → hide badge (JS adds .navbar-hidden to .navbar) ── */
-html:has(.navbar.navbar-hidden)::after {
-  opacity: 0;
-  transform: translateY(-14px);
-}
-
-/* ── Desktop (≥ 769px): larger & more prominent ── */
+/* ── Desktop (≥ 769px): badges-row larger ── */
 @media (min-width: 769px) {
-  html::after {
+  .badges-row {
     top: 82px;
     left: 20px;
+    gap: 10px;
+  }
+  .trade-licence-badge {
     padding: 12px 22px;
     border-radius: 15px;
     border-width: 2px;
@@ -3591,11 +3597,14 @@ html:has(.navbar.navbar-hidden)::after {
   }
 }
 
-/* ── Large phones (481–640px): navbar bottom ≈ 56px, badge at 70px = 14px gap ── */
+/* ── Large phones (481–640px) ── */
 @media (max-width: 640px) {
-  html::after {
+  .badges-row {
     top: 70px;
     left: 10px;
+    gap: 6px;
+  }
+  .trade-licence-badge {
     padding: 7px 12px;
     border-radius: 10px;
     font-size: 0.56rem;
@@ -3603,11 +3612,14 @@ html:has(.navbar.navbar-hidden)::after {
   }
 }
 
-/* ── Small phones (≤ 480px): navbar bottom ≈ 52px, badge at 64px = 12px gap ── */
+/* ── Small phones (≤ 480px) ── */
 @media (max-width: 480px) {
-  html::after {
+  .badges-row {
     top: 64px;
     left: 8px;
+    gap: 5px;
+  }
+  .trade-licence-badge {
     padding: 6px 10px;
     border-radius: 9px;
     font-size: 0.50rem;
@@ -4842,10 +4854,7 @@ html:has(.navbar.navbar-hidden)::after {
 
 /* ── Base (all screens) ── */
 .printout-badge {
-  position: fixed;
-  top: 116px;   /* below trade licence (~82px badge + ~26px height + 8px gap) */
-  left: 20px;
-  z-index: 199;
+  /* position handled by parent .badges-row */
   cursor: pointer;
 
   display: block;
@@ -4906,8 +4915,6 @@ html:has(.navbar.navbar-hidden)::after {
 /* ── Mobile ≤640px ── */
 @media (max-width: 640px) {
   .printout-badge {
-    top: 102px;   /* below trade licence at top:70px + ~26px + 6px */
-    left: 10px;
     padding: 7px 12px;
     border-radius: 10px;
     border-width: 1.5px;
@@ -4919,8 +4926,6 @@ html:has(.navbar.navbar-hidden)::after {
 /* ── Small phones ≤480px ── */
 @media (max-width: 480px) {
   .printout-badge {
-    top: 92px;    /* below trade licence at top:64px + ~22px + 6px */
-    left: 8px;
     padding: 6px 10px;
     border-radius: 9px;
     border-width: 1px;
