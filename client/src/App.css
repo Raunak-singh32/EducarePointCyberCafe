@@ -276,6 +276,8 @@ body::after {
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  position: relative;
+  overflow: hidden;
 }
 
 .product-image img {
@@ -596,10 +598,6 @@ body::after {
 }
 
 /* Success Page */
-.success-page {
-  text-align: center;
-  padding: 50px 20px;
-}
 
 .success-page h2 {
   font-size: 2.5rem;
@@ -634,26 +632,6 @@ body::after {
   font-size: 1.1rem;
 }
 
-.payment-section {
-  background: rgba(255, 255, 255, 0.05);
-  padding: 25px;
-  border-radius: 20px;
-  margin: 25px 0;
-  text-align: center;
-}
-
-.upi-box {
-  background: rgba(255, 154, 60, 0.08);
-  padding: 20px;
-  border-radius: 15px;
-  margin: 20px 0;
-  border: 2px dashed rgba(255, 154, 60, 0.45);
-}
-
-.note {
-  color: #888;
-  font-style: italic;
-}
 
 .new-order-btn {
   width: 100%;
@@ -1053,7 +1031,7 @@ body::after {
   padding: 20px;
 }
 
-.back-btn {
+.product-detail .back-btn {
   background: rgba(255, 255, 255, 0.1);
   color: white;
   border: none;
@@ -1064,7 +1042,7 @@ body::after {
   transition: all 0.3s;
 }
 
-.back-btn:hover {
+.product-detail .back-btn:hover {
   background: rgba(255, 255, 255, 0.2);
 }
 
@@ -1723,28 +1701,6 @@ body::after {
     justify-content: flex-end;
 }
 
-.badge.popular {
-    background: rgba(255, 100, 0, 0.2);
-    color: #ff6400;
-    border: 1px solid rgba(255, 100, 0, 0.3);
-}
-
-.badge.new {
-    background: rgba(0, 200, 255, 0.2);
-    color: #00c8ff;
-    border: 1px solid rgba(0, 200, 255, 0.3);
-}
-.search-bar select {
-    padding: 15px 25px;
-    border: 1px solid var(--glass-border);
-    border-radius: 30px;
-    font-size: 1rem;
-    background: var(--glass-bg-strong);
-    color: var(--text-primary);
-    cursor: pointer;
-    backdrop-filter: blur(10px);
-    box-shadow: var(--depth-shadow-soft);
-}
 
 .search-bar select option {
     background: var(--bg-elevated);
@@ -1783,10 +1739,7 @@ body::after {
     transform: scale(1.1);
 }
 
-.product-image {
-    position: relative;
-    overflow: hidden;
-}
+
 
 /* Quick View Modal */
 .quick-view-modal {
@@ -2020,7 +1973,7 @@ body::after {
   font-size: 1.3rem;
 }
 
-.summary-row {
+.cart-summary .summary-row {
   display: flex;
   justify-content: space-between;
   padding: 12px 0;
@@ -2048,7 +2001,7 @@ body::after {
   transition: transform 0.3s;
 }
 
-.clear-btn {
+.cart-summary .clear-btn {
   width: 100%;
   padding: 12px;
   background: transparent;
@@ -2059,25 +2012,6 @@ body::after {
   cursor: pointer;
   margin-top: 15px;
 }
-.add-to-cart-btn {
-    width: 100%;
-    padding: 12px;
-    margin-top: 15px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border: none;
-    border-radius: 12px;
-    font-size: 1rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s;
-}
-
-.add-to-cart-btn:hover {
-    transform: scale(1.02);
-    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
-}
-
 .add-to-cart-btn:disabled {
     background: rgba(255, 255, 255, 0.1);
     color: #888;
@@ -2156,12 +2090,12 @@ select option {
 }
 .success-page {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   min-height: 60vh;
-}
-
-.success-animation {
+  text-align: center;
+  padding: 30px 20px;
   text-align: center;
   animation: fadeInUp 0.5s ease;
 }
@@ -2223,20 +2157,6 @@ select option {
   color: #888;
 }
 
-.spinner {
-  width: 50px;
-  height: 50px;
-  border: 4px solid rgba(102, 126, 234, 0.3);
-  border-top: 4px solid #667eea;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 20px;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
 .scroll-to-top {
   position: fixed;
   bottom: 100px;
@@ -2838,16 +2758,6 @@ select option {
   position: absolute;
   opacity: 0.18;
   filter: blur(0.5px);
-}
-
-.shape-circle {
-  border-radius: 50%;
-  background: radial-gradient(circle at 30% 30%, #fff, var(--color-blue));
-}
-
-.shape-square {
-  border-radius: 18%;
-  background: linear-gradient(135deg, var(--color-blue), var(--color-accent));
 }
 
 .shape-triangle {
@@ -4009,23 +3919,9 @@ html:has(.navbar.navbar-hidden)::after {
 .upi-section { margin-bottom: 20px; }
 .upi-label { color: #aaa; font-size: 0.9rem; margin-bottom: 8px; }
 
-.upi-id-box {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  background: rgba(0, 0, 0, 0.3);
-  padding: 12px 20px;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 215, 0, 0.3);
-}
 
-.upi-id {
-  color: #FFD700;
-  font-size: 1.2rem;
-  font-weight: bold;
-  letter-spacing: 1px;
-}
+
+
 
 .copy-btn {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -4724,10 +4620,7 @@ html:has(.navbar.navbar-hidden)::after {
   text-align: center;
 }
 
-.cod-notice {
-  background: rgba(40, 167, 69, 0.1);
-  border-color: rgba(40, 167, 69, 0.3);
-}
+
 
 .notice-icon {
   font-size: 40px;
@@ -4835,394 +4728,6 @@ html:has(.navbar.navbar-hidden)::after {
   font-size: 13px;
   margin: 5px 0 0 0;
 }
-
-/* ══════════════════════════════════════════════════════════════
-   MOBILE RESPONSIVE — SERVICE / PAYMENT / ORDER HISTORY FLOW
-   Added as a consolidated block so nothing existing is touched.
-   These specifically fix the gaps in the service order journey.
-   ══════════════════════════════════════════════════════════════ */
-
-/* ── Tablet (≤ 768px): Service form & payment basics ── */
-@media (max-width: 768px) {
-  .service-form {
-    padding: 24px 20px;
-    border-radius: var(--radius-lg);
-  }
-
-  .payment-step {
-    padding: 0 4px;
-  }
-
-  .payment-methods {
-    gap: 12px;
-  }
-
-  .payment-card {
-    padding: 18px 14px;
-  }
-
-  .upi-payment-section {
-    padding: 18px 16px;
-  }
-
-  .order-summary-card {
-    padding: 18px 16px;
-  }
-
-  .form-row {
-    grid-template-columns: 1fr;
-    gap: 14px;
-  }
-
-  .admin-form {
-    padding: 24px 18px;
-  }
-
-  /* History page order cards */
-  .history-page .order-card {
-    padding: 16px;
-  }
-}
-
-/* ── Small phones (≤ 480px): Tighten everything ── */
-@media (max-width: 480px) {
-
-  /* ── Service form ── */
-  .service-form {
-    padding: 18px 14px;
-    border-radius: var(--radius-md);
-    box-shadow: none;
-  }
-
-  .services-page h2 {
-    font-size: 1.4rem;
-    margin: 20px 0 16px;
-  }
-
-  /* ── Delivery options: stack vertically ── */
-  .delivery-options {
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .delivery-option {
-    min-width: unset;
-    width: 100%;
-    padding: 12px 14px;
-    border-radius: 12px;
-  }
-
-  .delivery-icon {
-    font-size: 20px;
-  }
-
-  .delivery-info strong {
-    font-size: 0.9rem;
-  }
-
-  /* ── Price box: stack on small screens ── */
-  .price-box {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 2px;
-    padding: 12px 14px;
-  }
-
-  .price-box h3 {
-    font-size: 1.1rem;
-  }
-
-  .price-box p {
-    white-space: normal;
-    font-size: 0.75rem;
-  }
-
-  /* ── Payment step ── */
-  .payment-step {
-    padding: 0 2px;
-  }
-
-  .payment-step h2 {
-    font-size: 1.3rem;
-    text-align: center;
-    margin-bottom: 16px;
-  }
-
-  /* ── Payment cards: stack vertically ── */
-  .payment-methods {
-    flex-direction: column;
-    gap: 10px;
-    margin-bottom: 20px;
-  }
-
-  .payment-card {
-    padding: 14px 16px;
-    border-radius: 14px;
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 12px;
-    text-align: left;
-  }
-
-  .payment-icon {
-    font-size: 28px;
-    margin-bottom: 0;
-    flex-shrink: 0;
-  }
-
-  .payment-card h3 {
-    font-size: 0.95rem;
-    margin-bottom: 2px;
-  }
-
-  .payment-card p {
-    font-size: 0.78rem;
-  }
-
-  /* ── UPI section ── */
-  .upi-payment-section {
-    padding: 14px 12px;
-    border-radius: 14px;
-  }
-
-  .upi-amount h3 {
-    font-size: 1.1rem;
-  }
-
-  .upi-id-box {
-    padding: 12px 14px;
-    border-radius: 12px;
-  }
-
-  .upi-copy-row {
-    flex-wrap: wrap;
-    gap: 8px;
-    align-items: center;
-  }
-
-  .upi-id {
-    font-size: 13px;
-    word-break: break-all;
-    flex: 1;
-  }
-
-  .copy-btn {
-    padding: 6px 12px;
-    font-size: 0.78rem;
-    flex-shrink: 0;
-  }
-
-  .qr-code {
-    width: 160px;
-  }
-
-  /* ── Screenshot upload ── */
-  .screenshot-upload {
-    padding-top: 16px;
-  }
-
-  .screenshot-upload h4 {
-    font-size: 0.95rem;
-  }
-
-  .upload-hint {
-    font-size: 0.78rem;
-  }
-
-  .upload-label {
-    padding: 20px 14px;
-    min-height: 110px;
-  }
-
-  .upload-icon {
-    font-size: 28px;
-    margin-bottom: 6px;
-  }
-
-  .submit-payment-btn {
-    font-size: 0.9rem;
-    padding: 13px;
-    border-radius: 12px;
-  }
-
-  .back-btn {
-    font-size: 0.82rem;
-    padding: 10px;
-    border-radius: 12px;
-  }
-
-  /* ── Success page ── */
-  .success-page {
-    padding: 24px 8px;
-  }
-
-  .success-page h2 {
-    font-size: 1.5rem;
-    margin-bottom: 12px;
-  }
-
-  .success-icon {
-    font-size: 48px;
-    margin-bottom: 6px;
-  }
-
-  .order-summary-card {
-    padding: 14px 12px;
-    border-radius: 14px;
-    margin: 14px 0;
-    text-align: left;
-  }
-
-  .order-summary-card h3 {
-    font-size: 1rem;
-    margin-bottom: 10px;
-  }
-
-  .summary-row {
-    padding: 6px 0;
-    font-size: 0.85rem;
-  }
-
-  .verification-notice,
-  .cod-notice {
-    padding: 14px 12px;
-    border-radius: 12px;
-    margin-top: 14px;
-  }
-
-  .verification-notice h4,
-  .cod-notice h4 {
-    font-size: 0.95rem;
-    margin-bottom: 6px;
-  }
-
-  .verification-notice p,
-  .cod-notice p {
-    font-size: 0.82rem;
-    margin: 4px 0;
-  }
-
-  .notice-icon {
-    font-size: 28px;
-    margin-bottom: 6px;
-  }
-
-  .new-order-btn {
-    font-size: 0.9rem;
-    padding: 13px;
-    margin-top: 14px;
-  }
-
-  /* ── Order history page ── */
-  .history-page {
-    padding: 0 2px;
-  }
-
-  .history-page h2 {
-    font-size: 1.4rem;
-    text-align: center;
-    margin-bottom: 6px;
-  }
-
-  .search-form {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    margin-bottom: 20px;
-  }
-
-  .search-form input {
-    width: 100%;
-    padding: 12px 14px;
-    font-size: 0.95rem;
-    border-radius: 12px;
-  }
-
-  .search-form button {
-    width: 100%;
-    padding: 12px;
-    font-size: 0.95rem;
-    border-radius: 12px;
-    min-height: 44px;
-  }
-
-  .order-card {
-    padding: 14px 12px;
-    border-radius: 14px;
-    margin-bottom: 12px;
-  }
-
-  .order-card h4 {
-    font-size: 0.95rem;
-  }
-
-  .order-card p {
-    font-size: 0.82rem;
-  }
-
-  /* ── Admin form row: single column ── */
-  .form-row {
-    grid-template-columns: 1fr;
-    gap: 10px;
-  }
-
-  .admin-form {
-    padding: 16px 12px;
-    border-radius: 16px;
-  }
-
-  /* ── Radio group: stack on mobile ── */
-  .radio-group {
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  /* ── Page range hint: stack on mobile ── */
-  .page-range-hint {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 6px;
-  }
-}
-
-/* ── Very small phones (≤ 360px): Micro adjustments ── */
-@media (max-width: 360px) {
-  .service-form {
-    padding: 14px 10px;
-  }
-
-  .payment-card {
-    padding: 12px;
-  }
-
-  .payment-card h3 {
-    font-size: 0.88rem;
-  }
-
-  .upi-id {
-    font-size: 11px;
-  }
-
-  .order-summary-card {
-    padding: 12px 10px;
-  }
-
-  .summary-row {
-    font-size: 0.78rem;
-  }
-
-  .success-page h2 {
-    font-size: 1.2rem;
-  }
-
-  .submit-payment-btn,
-  .new-order-btn,
-  .submit-btn {
-    font-size: 0.85rem;
-    padding: 12px;
-  }
-}
 /* ═══════════════════════════════════════════════════
    ADMIN PRODUCT SEARCH BAR
    ═══════════════════════════════════════════════════ */
@@ -5264,6 +4769,13 @@ html:has(.navbar.navbar-hidden)::after {
   color: var(--text-secondary);
 }
 
+.admin-search-count {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 .admin-search-clear {
   background: rgba(255, 255, 255, 0.1);
   border: none;
@@ -5286,15 +4798,133 @@ html:has(.navbar.navbar-hidden)::after {
   color: #ff6b6b;
 }
 
-/* Mobile: full-width search bar in admin */
 @media (max-width: 480px) {
   .admin-search-bar {
     padding: 8px 12px;
     border-radius: 12px;
     margin: 10px 0 12px;
   }
-
   .admin-search-input {
     font-size: 0.85rem;
+  }
+}
+
+/* ═══════════════════════════════════════════════════
+   PRINTOUT BADGE — Clickable, below Trade Licence
+   Same glowing pill style, orange brand color
+   ═══════════════════════════════════════════════════ */
+
+@keyframes printoutGlow {
+  0%, 100% {
+    box-shadow:
+      0 0 10px  rgba(255,154,60,0.55),
+      0 0 24px  rgba(255,154,60,0.28),
+      0 0 48px  rgba(255,154,60,0.12),
+      0 8px 28px rgba(0,0,0,0.55),
+      inset 0 1px 0 rgba(255,255,255,0.22);
+    border-color: rgba(255,154,60,0.65);
+  }
+  50% {
+    box-shadow:
+      0 0 18px  rgba(255,154,60,0.85),
+      0 0 40px  rgba(255,154,60,0.50),
+      0 0 80px  rgba(255,154,60,0.22),
+      0 8px 28px rgba(0,0,0,0.55),
+      inset 0 1px 0 rgba(255,255,255,0.30);
+    border-color: rgba(255,154,60,1);
+  }
+}
+
+@keyframes printoutFadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Base (all screens) ── */
+.printout-badge {
+  position: fixed;
+  top: 116px;   /* below trade licence (~82px badge + ~26px height + 8px gap) */
+  left: 20px;
+  z-index: 199;
+  cursor: pointer;
+
+  display: block;
+  padding: 12px 22px;
+  border-radius: 15px;
+  border: 2px solid rgba(255,154,60,0.65);
+  white-space: nowrap;
+
+  background: linear-gradient(
+    135deg,
+    #3d1a00 0%,
+    #7a3300 30%,
+    #c45a00 65%,
+    #ff9a3c 100%
+  );
+
+  opacity: 1;
+  transform: translateY(0);
+
+  color: #ffffff;
+  font-size: 0.76rem;
+  font-weight: 900;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  text-shadow:
+    0 0 10px rgba(255,255,255,0.65),
+    0 1px 2px rgba(0,0,0,0.5);
+
+  user-select: none;
+  -webkit-user-select: none;
+
+  animation:
+    printoutFadeIn 0.65s cubic-bezier(0.22,1,0.36,1) 0.2s backwards,
+    printoutGlow 2.8s ease-in-out infinite 0.85s;
+
+  transition:
+    opacity  0.35s ease,
+    transform 0.35s cubic-bezier(0.22,1,0.36,1),
+    background 0.2s ease;
+}
+
+.printout-badge:hover {
+  background: linear-gradient(135deg, #ff9a3c 0%, #ff6b35 100%);
+  transform: translateY(-2px) scale(1.04);
+}
+
+.printout-badge:active {
+  transform: translateY(0) scale(0.97);
+}
+
+/* ── Hide with navbar on scroll down ── */
+.printout-badge.badge-hidden {
+  opacity: 0;
+  transform: translateY(-14px);
+  pointer-events: none;
+}
+
+/* ── Mobile ≤640px ── */
+@media (max-width: 640px) {
+  .printout-badge {
+    top: 102px;   /* below trade licence at top:70px + ~26px + 6px */
+    left: 10px;
+    padding: 7px 12px;
+    border-radius: 10px;
+    border-width: 1.5px;
+    font-size: 0.56rem;
+    letter-spacing: 2px;
+  }
+}
+
+/* ── Small phones ≤480px ── */
+@media (max-width: 480px) {
+  .printout-badge {
+    top: 92px;    /* below trade licence at top:64px + ~22px + 6px */
+    left: 8px;
+    padding: 6px 10px;
+    border-radius: 9px;
+    border-width: 1px;
+    font-size: 0.50rem;
+    letter-spacing: 1.8px;
   }
 }

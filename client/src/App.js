@@ -27,6 +27,7 @@ function App() {
 
 function AppContent() {
   const location = useLocation();
+  const navigate  = useNavigate();
   const navHidden = useStickyNav();
   useScrollTint();
 
@@ -48,6 +49,14 @@ function AppContent() {
       <nav className={`navbar ${navHidden ? 'navbar-hidden' : ''}`}>
         <Navbar />
       </nav>
+        {/* ── Printout Badge ── */}
+      <div
+        className={`printout-badge ${navHidden ? 'badge-hidden' : ''}`}
+        onClick={() => navigate('/services')}
+        title="Click to place a print order"
+      >
+        🖨️ PRINTOUT
+      </div>
 
       <div className="page-fade-wrapper" key={location.pathname}>
         <main>
