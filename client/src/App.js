@@ -147,8 +147,8 @@ function Navbar() {
         <span className="nav-brand-text">Educare Point</span>
       </div>
 
-            {/* Login / Sign Up Buttons */}
-      {user ? (
+            {/* Login Button — single icon + text */}
+        {user ? (
         <button
           className="nav-login-icon-btn"
           onClick={handleUserClick}
@@ -159,15 +159,10 @@ function Navbar() {
           </span>
         </button>
       ) : (
-        <div className="auth-buttons">
-          <button className="login-btn" onClick={() => navigate('/login')}>
-            Login
-          </button>
-          <span className="auth-divider">|</span>
-          <button className="signup-btn" onClick={() => navigate('/login')}>
-            Sign Up
-          </button>
-        </div>
+        <button className="nav-login-btn" onClick={() => navigate('/login')}>
+          <span className="nav-login-btn-icon">👤</span>
+          <span className="nav-login-btn-text">Login</span>
+        </button>
       )}
 
       <button onClick={() => navigate('/')}>📦 Products</button>

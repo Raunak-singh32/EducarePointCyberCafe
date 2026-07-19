@@ -4933,47 +4933,48 @@ white-space: nowrap;
     letter-spacing: 1.8px;
   }
 }
-/* Login / Sign Up Buttons in Navbar */
-.auth-buttons {
+
+/* ═══════════════════════════════════════════════════
+   SINGLE LOGIN BUTTON — icon + text, clean on all sizes
+   ═══════════════════════════════════════════════════ */
+.nav-login-btn {
   display: flex;
   align-items: center;
   gap: 6px;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(10px);
-  padding: 6px 14px;
-  border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  margin-right: 8px;
-}
-
-.login-btn, .signup-btn {
-  background: none;
-  border: none;
-  color: #fff;
-  font-size: 13px;
-  font-weight: 600;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  padding: 8px 16px;
   cursor: pointer;
-  padding: 4px 8px;
-  transition: all 0.3s ease;
-  font-family: inherit;
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: all 0.25s ease;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
-.login-btn:hover, .signup-btn:hover {
-  color: #ffd700;
-  transform: translateY(-1px);
+.nav-login-btn:hover {
+  background: rgba(255, 154, 60, 0.2);
+  border-color: rgba(255, 154, 60, 0.6);
+  transform: translateY(-2px);
 }
 
-.auth-divider {
-  color: rgba(255, 255, 255, 0.4);
-  font-size: 13px;
-  user-select: none;
+.nav-login-btn-icon {
+  font-size: 1rem;
+  line-height: 1;
 }
 
-/* Adjust existing nav-login-icon-btn for logged-in user */
+.nav-login-btn-text {
+  line-height: 1;
+}
+
+/* ── Logged-in avatar button (kept for reference — already exists) ── */
 .nav-login-icon-btn {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--gradient-brand);
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 2px solid rgba(255,154,60,0.6);
   border-radius: 50%;
   width: 36px;
   height: 36px;
@@ -4982,12 +4983,39 @@ white-space: nowrap;
   justify-content: center;
   cursor: pointer;
   color: #fff;
-  font-weight: 600;
-  font-size: 14px;
-  transition: all 0.3s ease;
+  font-weight: 700;
+  font-size: 0.9rem;
+  transition: all 0.25s ease;
+  flex-shrink: 0;
+  box-shadow: 0 0 12px rgba(255, 154, 60, 0.5);
 }
 
 .nav-login-icon-btn:hover {
-  background: rgba(255, 215, 0, 0.2);
-  border-color: #ffd700;
+  transform: scale(1.12);
+  box-shadow: 0 0 20px rgba(255, 154, 60, 0.8);
+}
+
+/* ── Tablet/Mobile: keep icon + text together, just shrink ── */
+@media (max-width: 640px) {
+  .nav-login-btn {
+    padding: 6px 12px;
+    font-size: 0.75rem;
+    gap: 4px;
+  }
+  .nav-login-btn-icon {
+    font-size: 0.9rem;
+  }
+}
+
+/* ── Small phones: icon + text still both visible, compact ── */
+@media (max-width: 480px) {
+  .nav-login-btn {
+    padding: 5px 10px;
+    font-size: 0.68rem;
+    gap: 3px;
+    border-radius: 999px;
+  }
+  .nav-login-btn-icon {
+    font-size: 0.8rem;
+  }
 }
