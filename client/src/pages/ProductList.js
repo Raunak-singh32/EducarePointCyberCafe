@@ -34,7 +34,7 @@ function ProductCard({ product, onClick, onQuickView, onAddToCart, onBuyNow }) {
       </div>
       <div className="product-info">
         <h3>{product.name}</h3>
-        <p className="category">{product.category}</p>
+        {/* <p className="category">{product.category}</p> */}
         <p className="description">{product.description}</p>
         <div className="product-footer">
           <span className="price">₹{product.price}</span>
@@ -92,7 +92,7 @@ function FeaturedCard({ product, onClick, onQuickView, onAddToCart, onBuyNow }) 
       </div>
       <div className="product-info">
         <h3>{product.name}</h3>
-        <p className="category">{product.category}</p>
+        {/* <p className="category">{product.category}</p> */}
         <div className="product-footer">
           <span className="price">₹{product.price}</span>
           <div className="badges">
@@ -273,7 +273,7 @@ const ProductList = () => {
                         </div>
                         <div className="quick-view-info">
                             <h2>{quickView.name}</h2>
-                            <p className="category">{quickView.category}</p>
+                            {/* <p className="category">{quickView.category}</p> */}
                             <p className="price">₹{quickView.price}</p>
                             <p className="description">{quickView.description}</p>
                             <span className={`badge ${quickView.stockStatus}`}>

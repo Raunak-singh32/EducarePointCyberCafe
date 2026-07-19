@@ -147,20 +147,28 @@ function Navbar() {
         <span className="nav-brand-text">Educare Point</span>
       </div>
 
-      {/* 👤 Login Icon */}
-      <button
-        className="nav-login-icon-btn"
-        onClick={handleUserClick}
-        title={user ? `Logged in as ${user.name}` : 'Login / Sign Up'}
-      >
-        {user ? (
+            {/* Login / Sign Up Buttons */}
+      {user ? (
+        <button
+          className="nav-login-icon-btn"
+          onClick={handleUserClick}
+          title={`Logged in as ${user.name}`}
+        >
           <span className="nav-user-initial">
             {user.name.charAt(0).toUpperCase()}
           </span>
-        ) : (
-          <span className="nav-user-icon">👤</span>
-        )}
-      </button>
+        </button>
+      ) : (
+        <div className="auth-buttons">
+          <button className="login-btn" onClick={() => navigate('/login')}>
+            Login
+          </button>
+          <span className="auth-divider">|</span>
+          <button className="signup-btn" onClick={() => navigate('/login')}>
+            Sign Up
+          </button>
+        </div>
+      )}
 
       <button onClick={() => navigate('/')}>📦 Products</button>
       <button onClick={() => navigate('/services')}>🖨️ Services</button>

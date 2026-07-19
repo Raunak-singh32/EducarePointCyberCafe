@@ -12,7 +12,7 @@ const app = express();
 const allowedOrigins = [
     'https://educare-point-cyber-cafe.vercel.app',
     'https://educarepointcybercafe.pages.dev',
-     'https://educarepoint.in', 
+    //  'https://educarepoint.in', 
     'http://localhost:3000',
     'http://localhost:5173',
 ];

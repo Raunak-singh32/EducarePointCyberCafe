@@ -202,11 +202,11 @@ const Cart = () => {
           )}
           {!user && (
             <div className="guest-login-prompt">
-              <p>💡 <strong>Login</strong> to auto-fill your details</p>
-              <button type="button" onClick={() => navigate('/login')} className="prompt-login-btn">
+              {/* <p>💡 <strong>Login</strong> to auto-fill your details</p> */}
+              {/* <button type="button" onClick={() => navigate('/login')} className="prompt-login-btn">
                 Login / Sign Up
-              </button>
-              <p className="skip-text">or fill manually below</p>
+              </button> */}
+              {/* <p className="skip-text">or fill manually below</p> */}
             </div>
           )}
 
