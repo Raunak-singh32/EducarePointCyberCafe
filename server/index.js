@@ -11,6 +11,8 @@ const app = express();
 // ========== CORS CONFIGURATION ==========
 const allowedOrigins = [
     'https://educare-point-cyber-cafe.vercel.app',
+    'https://educarepointcybercafe.pages.dev',
+     'https://educarepoint.in', 
     'http://localhost:3000',
     'http://localhost:5173',
 ];
