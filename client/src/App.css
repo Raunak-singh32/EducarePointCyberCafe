@@ -3096,7 +3096,7 @@ select option {
   opacity: 0;
   animation: bgSlideShow 48s infinite, bgKenBurns 48s infinite;
 }
-
+/* 
 .bg-slide-1 { background-image: url('https://img.magnific.com/free-photo/cosmic-background-orange-blue-laser-lights-perfect-digital-wallpaper_181624-21417.jpg?semt=ais_hybrid&w=740&q=80'); animation-delay: 0s; }
 .bg-slide-2 { background-image: url('https://cdn.wallpapersafari.com/21/59/VQRPMm.jpg'); animation-delay: 6s; }
 .bg-slide-3 { background-image: url('https://wallpapers.com/images/hd/super-cool-3d-o9vmkultq8k5kgjr.jpg'); animation-delay: 12s; }
@@ -3104,7 +3104,7 @@ select option {
 .bg-slide-5 { background-image: url('https://wallpapercave.com/wp/wp3178669.jpg'); animation-delay: 24s; }
 .bg-slide-6 { background-image: url('https://wallpaperaccess.com/full/301006.jpg'); animation-delay: 30s; }
 .bg-slide-7 { background-image: url('https://static.vecteezy.com/system/resources/thumbnails/008/210/665/small/3d-illustration-background-for-advertising-and-wallpaper-in-sci-fi-and-technology-innovation-scene-3d-rendering-in-decorative-concept-photo.jpg'); animation-delay: 36s; }
-.bg-slide-8 { background-image: url('https://wallpapercave.com/wp/UHie8Xp.jpg'); animation-delay: 42s; }
+.bg-slide-8 { background-image: url('https://wallpapercave.com/wp/UHie8Xp.jpg'); animation-delay: 42s; } */
 
 /* Crossfade: each slide fades in, holds, fades out, then stays hidden
    until its delay comes around again on the next loop. Percentages are
