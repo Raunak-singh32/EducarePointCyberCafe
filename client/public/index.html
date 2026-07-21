@@ -1,92 +1,206 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
+
+<head>
+
+  <!-- Basic -->
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#000000" />
-  <meta name="description" content="Educare Point Cyber Cafe - Stationery, printing & cyber services. 782, S.K. Nagar Rishra, Timing Monday - Sunday 9:00 AM - 2:30 PM & 5:00 PM - 10:00 PM" />
-  <meta name="google-site-verification" content="j2w0nsIFiQohL_YxwJXfXvh9TLrPcI0bb35DQRb9iqU" />
-  
-  <!-- Apple touch icon -->
-  <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo-header.png" />
-  
-  <!-- Manifest -->
-  <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
-  
-  <title>Educare Point Cyber Cafe - Rishra, Hooghly</title>
+
+  <title>Educare Point Cyber Cafe | Rishra, Hooghly</title>
+
+  <meta
+    name="description"
+    content="Educare Point Cyber Cafe provides Printing, Online Form Fill-up, Xerox, Lamination, Passport Services, PAN Card, Aadhaar Services, Stationery and Cyber Services in Rishra, Hooghly."
+  />
+
+  <meta
+    name="keywords"
+    content="Educare Point Cyber Cafe, Cyber Cafe Rishra, Printing, Xerox, PAN Card, Passport, Online Form Fill-up, Aadhaar, Stationery, Hooghly"
+  />
+
+  <meta name="author" content="Educare Point Cyber Cafe" />
+
+  <meta
+    name="google-site-verification"
+    content="j2w0nsIFiQohL_YxwJXfXvh9TLrPcI0bb35DQRb9iqU"
+  />
+
+  <!-- Canonical -->
+
+  <link
+    rel="canonical"
+    href="https://educarepointcybercafe.pages.dev/"
+  />
+
+  <!-- Favicons -->
+
+  <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
+
+  <link
+    rel="apple-touch-icon"
+    href="%PUBLIC_URL%/logo-header.png.jpeg"
+  />
+
+  <link
+    rel="manifest"
+    href="%PUBLIC_URL%/manifest.json"
+  />
+
+  <!-- Open Graph -->
+
+  <meta property="og:type" content="website" />
+
+  <meta
+    property="og:title"
+    content="Educare Point Cyber Cafe"
+  />
+
+  <meta
+    property="og:description"
+    content="Stationery, Printing & Complete Cyber Services in Rishra, Hooghly."
+  />
+
+  <meta
+    property="og:url"
+    content="https://educarepointcybercafe.pages.dev/"
+  />
+
+  <meta
+    property="og:site_name"
+    content="Educare Point Cyber Cafe"
+  />
+
+  <meta
+    property="og:image"
+    content="https://educarepointcybercafe.pages.dev/logo-header.png.jpeg"
+  />
+
+  <!-- Twitter -->
+
+  <meta
+    name="twitter:card"
+    content="summary_large_image"
+  />
+
+  <meta
+    name="twitter:title"
+    content="Educare Point Cyber Cafe"
+  />
+
+  <meta
+    name="twitter:description"
+    content="Stationery, Printing & Cyber Services in Rishra."
+  />
+
+  <meta
+    name="twitter:image"
+    content="https://educarepointcybercafe.pages.dev/logo-header.png.jpeg"
+  />
+
+
+
+  <!-- Website Schema -->
 
   <script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "LocalBusiness",
-  "name": "Educare Point Cyber Cafe",
-  "image": "https://educarepointcybercafe.pages.dev/logo.png",
-  "address": {
-    "@type": "PostalAddress",
-    "streetAddress": "782, S.K. Nagar",
-    "addressLocality": "Rishra",
-    "addressRegion": "West Bengal",
-    "addressCountry": "IN"
-  },
-  "telephone": "+91-9331443939",
-  "priceRange": "₹₹",
-  "aggregateRating": {
-    "@type": "AggregateRating",
-    "ratingValue": "4.8",
-    "reviewCount": "Your Review Count"
-  },
-  "openingHours": "Mo-Sa 08:00-20:00"
-}
-</script>
-  
-  <!-- Animated Favicon Script -->
-  <script>
-    (function() {
-      const canvas = document.createElement('canvas');
-      canvas.width = 32;
-      canvas.height = 32;
-      const ctx = canvas.getContext('2d');
-      
-      // Load the wheel image
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.src = '%PUBLIC_URL%/wheel-rotating.gif';
-      
-      let angle = 0;
-      
-      function drawFavicon() {
-        ctx.clearRect(0, 0, 32, 32);
-        ctx.save();
-        ctx.translate(16, 16);
-        ctx.rotate(angle * Math.PI / 180);
-        ctx.translate(-16, -16);
-        ctx.drawImage(img, 0, 0, 32, 32);
-        ctx.restore();
-        
-        // Update favicon
-        const link = document.querySelector("link[rel*='icon']") || document.createElement('link');
-        link.type = 'image/x-icon';
-        link.rel = 'shortcut icon';
-        link.href = canvas.toDataURL('image/png');
-        document.getElementsByTagName('head')[0].appendChild(link);
-        
-        angle += 3; // rotation speed
-        requestAnimationFrame(drawFavicon);
-      }
-      
-      img.onload = function() {
-        drawFavicon();
-      };
-      
-      // Fallback if image fails
-      img.onerror = function() {
-        console.log('Favicon animation fallback');
-      };
-    })();
+  {
+    "@context":"https://schema.org",
+    "@type":"WebSite",
+    "name":"Educare Point Cyber Cafe",
+    "url":"https://educarepointcybercafe.pages.dev/"
+  }
   </script>
+
+
+  <!-- Organization Schema -->
+
+  <script type="application/ld+json">
+  {
+    "@context":"https://schema.org",
+    "@type":"Organization",
+    "name":"Educare Point Cyber Cafe",
+    "url":"https://educarepointcybercafe.pages.dev/",
+    "logo":"https://educarepointcybercafe.pages.dev/logo-header.png.jpeg",
+    "image":"https://educarepointcybercafe.pages.dev/logo-header.png.jpeg"
+  }
+  </script>
+
+
+
+  <!-- Local Business Schema -->
+
+  <script type="application/ld+json">
+  {
+    "@context":"https://schema.org",
+    "@type":"InternetCafe",
+
+    "name":"Educare Point Cyber Cafe",
+
+    "image":"https://educarepointcybercafe.pages.dev/logo-header.png.jpeg",
+
+    "logo":"https://educarepointcybercafe.pages.dev/logo-header.png.jpeg",
+
+    "url":"https://educarepointcybercafe.pages.dev/",
+
+    "telephone":"+91-9331443939",
+
+    "priceRange":"₹₹",
+
+    "address":{
+      "@type":"PostalAddress",
+      "streetAddress":"782, S.K. Nagar",
+      "addressLocality":"Rishra",
+      "addressRegion":"West Bengal",
+      "postalCode":"712249",
+      "addressCountry":"IN"
+    },
+
+    "openingHoursSpecification":[
+
+      {
+        "@type":"OpeningHoursSpecification",
+        "dayOfWeek":[
+          "Monday",
+          "Tuesday",
+          "Wednesday",
+          "Thursday",
+          "Friday",
+          "Saturday",
+          "Sunday"
+        ],
+        "opens":"09:00",
+        "closes":"14:30"
+      },
+
+      {
+        "@type":"OpeningHoursSpecification",
+        "dayOfWeek":[
+          "Monday",
+          "Tuesday",
+          "Wednesday",
+          "Thursday",
+          "Friday",
+          "Saturday",
+          "Sunday"
+        ],
+        "opens":"17:00",
+        "closes":"22:00"
+      }
+
+    ]
+
+  }
+  </script>
+
 </head>
-  <body>
-    <noscript>You need to enable JavaScript to run this app.</noscript>
-    <div id="root"></div>
-  </body>
+
+<body>
+
+<noscript>You need to enable JavaScript to run this app.</noscript>
+
+<div id="root"></div>
+
+</body>
+
 </html>
