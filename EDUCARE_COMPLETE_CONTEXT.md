@@ -8,9 +8,9 @@
 
 Real-world full-stack MERN application for **Educare Point Cyber Cafe**
 - Location: 782 S.K. Nagar, Rishra, Hooghly, Naya Basti, Jhaji More — 712249
-- Owner: **Ajay Kumar Ram**
+- Owner: **Raunak Kumar**
 - WhatsApp: `919331443939`
-- UPI ID: `pointeducare@ybl`
+- UPI ID: `raunakkumar5203@nyes`
 - Business Hours: 9 AM–2:30 PM, 5 PM–10 PM
 - Developer: Raunak (3rd Year B.Tech IT, MCKV Institute of Engineering, 2023–2027)
 
@@ -37,7 +37,7 @@ EducarePoint/
 │   │   ├── index.html               # Page title: "Educare Point Cyber Cafe - Rishra, Hooghly"
 │   │   ├── manifest.json            # PWA manifest (installable on mobile)
 │   │   ├── wheel-rotating.gif       # Logo in navbar
-│   │   └── phonepe-qr.png          # PhonePe QR code for UPI payment
+│   │   └── phonepe-q.jpeg          # PhonePe QR code for UPI payment
 │   └── src/
 │       ├── App.js                   # Root: Router, AuthProvider, navbar, Printout badge, A→D→M secret
 │       ├── App.css                  # ALL styling (4900+ lines, dark glassmorphism theme)

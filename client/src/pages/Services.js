@@ -473,11 +473,11 @@ const Services = () => {
               <div className="upi-id-box">
                 <p className="upi-label">UPI ID:</p>
                 <div className="upi-copy-row">
-                  <span className="upi-id">pointeducare@ybl</span>
+                  <span className="upi-id">raunakkumar5203@nyes</span>
                   <button
                     className="copy-btn"
                     onClick={() => {
-                      navigator.clipboard.writeText('pointeducare@ybl');
+                      navigator.clipboard.writeText('raunakkumar5203@nyes');
                       alert('UPI ID copied!');
                     }}
                   >
@@ -489,7 +489,7 @@ const Services = () => {
               <div className="qr-section">
                 <p className="qr-label">Or scan QR code:</p>
                 <img
-                  src="/phonepe-qr.png"
+                  src="/phonepe-q.jpeg"
                   alt="PhonePe QR"
                   className="qr-code"
                   onError={(e) => {
@@ -497,7 +497,7 @@ const Services = () => {
                     e.target.parentElement.innerHTML += '<p class="qr-fallback">Use UPI ID above</p>';
                   }}
                 />
-                <p className="qr-name">Ajay Kumar Ram</p>
+                <p className="qr-name">Raunak Kumar</p>
               </div>
             </div>
 
