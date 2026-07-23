@@ -137,7 +137,7 @@ const Services = () => {
       : 1;
 
     const servicePrice = pricePerPage * pageCount * formData.copies;
-    const itemsPrice = selectedItems.reduce((sum, item) => sum + item.price, 0);
+   const itemsPrice = selectedItems.reduce((sum, item) => sum + parseFloat(item.price) || 0, 0);
     const deliveryCharge = formData.deliveryType === 'delivery' ? 15 : 0;
 
     return servicePrice + itemsPrice + deliveryCharge;
@@ -217,7 +217,7 @@ const Services = () => {
         fileName,
         paymentMethod: method,
         paymentStatus: 'pending',
-        items: selectedItems.map(i => ({ itemId: i._id, name: i.name, price: i.price, quantity: 1 }))
+       items: selectedItems.map(i => ({ itemId: i._id, name: i.name, price: parseFloat(i.price) || 0, quantity: 1 }))
       };
 
       // ── Single order creation ──
