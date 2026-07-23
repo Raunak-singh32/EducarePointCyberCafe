@@ -7,19 +7,12 @@ const productSchema = new mongoose.Schema({
         trim: true 
     },
     category: {
-  type: String,
-  enum: [
-    "pens",
-    "copies",
-    "art-supplies",
-    "stationery",
-    "craft",
-    "sports",
-    "utility",
-    "furniture",
-     "paper"
-  ]
-},
+        type: String,
+        enum: [
+            "pens", "copies", "art-supplies", "stationery",
+            "craft", "sports", "utility", "furniture", "paper"
+        ]
+    },
     subcategory: { 
         type: String,
         trim: true 
@@ -29,14 +22,13 @@ const productSchema = new mongoose.Schema({
         trim: true 
     },
     price: { 
-        type: Number, 
-        required: true, 
-        min: 0 
+        type: String,
+        required: true,
+        trim: true
     },
     costPrice: { 
-        type: Number, 
-        default: 0,
-        min: 0 
+        type: String,
+        default: '0'
     },
     quantity: { 
         type: Number, 
@@ -83,14 +75,12 @@ const productSchema = new mongoose.Schema({
     }
 });
 
-// Virtual for stock status
 productSchema.virtual('stockStatus').get(function() {
     if (this.quantity <= 0) return 'out-of-stock';
     if (this.quantity <= this.lowStockAlert) return 'low-stock';
     return 'in-stock';
 });
 
-// Virtual for display quantity
 productSchema.virtual('displayQuantity').get(function() {
     if (this.showQuantity) return this.quantity;
     return this.quantity > 0 ? 'Available' : 'Out of Stock';

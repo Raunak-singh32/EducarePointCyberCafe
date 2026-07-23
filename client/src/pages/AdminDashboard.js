@@ -152,7 +152,7 @@ const AdminDashboard = () => {
                 </select>
               </div>
               <div className="form-row">
-                <input type="number" placeholder="Price ₹" value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value })} required />
+                <input type="text" placeholder="Price ₹" value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value })} required />
                 <input type="number" placeholder="Quantity" value={formData.quantity} onChange={e => setFormData({ ...formData, quantity: e.target.value })} required />
               </div>
               <input placeholder="Description" value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} style={{ marginBottom: '20px' }} />
