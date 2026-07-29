@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useCart } from '../context/CartContext';
+import { useCart, getNumericPrice } from '../context/CartContext';
+// import { useCart } from '../context/CartContext';
 import { useNavigate } from 'react-router-dom';
 import { orderAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -45,7 +46,7 @@ const Cart = () => {
     const orderItems = cart.map(item => ({
       itemId:   item._id,
       name:     item.name,
-      price:    item.price,
+      price:   getNumericPrice(item.price),
       quantity: item.quantity,
     }));
     const res = await orderAPI.create({
@@ -169,7 +170,7 @@ const Cart = () => {
                 <button onClick={() => updateQuantity(item._id, item.quantity + 1)}>+</button>
               </div>
               <button onClick={() => removeFromCart(item._id)} className="remove-btn">🗑️</button>
-              <div className="item-total">₹{item.price * item.quantity}</div>
+              <div className="item-total">₹{getNumericPrice(item.price) * item.quantity}</div>
             </div>
           ))}
         </div>
@@ -216,7 +217,7 @@ const Cart = () => {
             <div className="selected-items">
               {cart.map(item => (
                 <span key={item._id} className="selected-chip">
-                  {item.name} ×{item.quantity} — ₹{item.price * item.quantity}
+                  {item.name} ×{item.quantity} — ₹{getNumericPrice(item.price) * item.quantity}
                 </span>
               ))}
             </div>
