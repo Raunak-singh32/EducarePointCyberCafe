@@ -799,7 +799,7 @@ const Services = () => {
           </div>
         </div>
 
-        {/* ── Pickup Time ── */}
+        {/* ── Pickup Time — commented out for now, uncomment later ──
         {formData.deliveryType === 'pickup' && (
           <div className="form-group">
             <label>Pickup Time:</label>
@@ -815,6 +815,7 @@ const Services = () => {
             </select>
           </div>
         )}
+        ── */}
 
         {/* ── Delivery Address ── */}
         {formData.deliveryType === 'delivery' && (

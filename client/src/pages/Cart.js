@@ -281,6 +281,7 @@ const Cart = () => {
             </div>
           </div>
 
+          {/* PICKUP TIME — commented out for now, uncomment later
           {orderData.deliveryType === 'pickup' && (
             <div className="form-group">
               <label>Pickup Time:</label>
@@ -299,6 +300,7 @@ const Cart = () => {
               </select>
             </div>
           )}
+          */}
 
           {orderData.deliveryType === 'delivery' && (
             <div className="form-group">
