@@ -85,5 +85,13 @@ productSchema.virtual('displayQuantity').get(function() {
     if (this.showQuantity) return this.quantity;
     return this.quantity > 0 ? 'Available' : 'Out of Stock';
 });
+// Index 1: Filter products by category (product listing page)
+productSchema.index({ category: 1 });
 
+// Index 2: Homepage queries — popular products and new arrivals
+// isPopular and isNew are both Boolean equality fields
+productSchema.index({ isPopular: 1, isNew: 1 });
+
+// Index 3: Active products only (most queries filter by isActive: true)
+productSchema.index({ isActive: 1, category: 1 });
 module.exports = mongoose.model('Product', productSchema);

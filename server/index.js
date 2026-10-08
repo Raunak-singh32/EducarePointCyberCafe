@@ -5,8 +5,19 @@ const cors = require('cors');
 const path = require('path');
 const session = require('express-session');
 const passport = require('passport');
-
+const rateLimit = require('express-rate-limit');
 const app = express();
+
+const adminLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes window
+    max: 20, // Max 20 wrong attempts per IP address
+    message: {
+        status: 429,
+        error: "Too many login attempts from this IP address. Please try again after 15 minutes."
+    },
+    standardHeaders: true, 
+    legacyHeaders: false,  
+});
 
 // ========== CORS CONFIGURATION ==========
 const allowedOrigins = [
@@ -66,6 +77,7 @@ app.use('/api/products', require('./routes/products'));
 app.use('/api/orders', require('./routes/orders'));
 app.use('/api/upload', require('./routes/upload'));
 app.use('/api/download', require('./routes/download')); // ✅ PDF download proxy
+app.use('/api/auth/login', adminLimiter);
 app.use('/api/auth', require('./routes/auth').router);
 
 // ========== TEST ROUTES ==========
@@ -88,14 +100,8 @@ app.get('/health', (req, res) => {
 });
 
 // ========== ERROR HANDLING ==========
-app.use((err, req, res, next) => {
-    console.error('Error:', err.stack);
-    res.status(500).json({
-        success: false,
-        message: 'Something went wrong!',
-        error: process.env.NODE_ENV === 'development' ? err.message : undefined
-    });
-});
+const errorHandler = require('./middleware/errorHandler');
+app.use(errorHandler);
 
 app.use((req, res) => {
     res.status(404).json({

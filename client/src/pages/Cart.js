@@ -74,7 +74,7 @@ const Cart = () => {
 👤 Customer: ${orderData.customerName}
 📞 Phone: ${orderData.customerPhone}
 📦 Delivery: ${orderData.deliveryType === 'pickup' ? 'Pickup' : 'Home Delivery'}
-💰 Total: ₹${grandTotal}
+💰 Total: ₹${savedOrderData?.grandTotal || grandTotal}
 💳 Payment: ${method?.toUpperCase() || 'N/A'}`;
     window.open(`https://wa.me/${OWNER_PHONE}?text=${encodeURIComponent(msg)}`, '_blank');
   };
@@ -97,7 +97,7 @@ const Cart = () => {
     try {
       const newOrderId = await createOrder('upi');
       setPlacedOrderId(newOrderId);
-      setSavedOrderData({ ...orderData, paymentMethod: 'upi', id: newOrderId });
+      setSavedOrderData({ ...orderData, paymentMethod: 'upi', id: newOrderId, grandTotal });
       if (screenshotFile) {
         const fd = new FormData();
         fd.append('screenshot', screenshotFile);
@@ -118,7 +118,7 @@ const Cart = () => {
     try {
       const newOrderId = await createOrder('cod');
       setPlacedOrderId(newOrderId);
-      setSavedOrderData({ ...orderData, paymentMethod: 'cod', id: newOrderId });
+      setSavedOrderData({ ...orderData, paymentMethod: 'cod', id: newOrderId, grandTotal });
       clearCart();
       setStep('success');
     } catch {
@@ -481,7 +481,7 @@ const Cart = () => {
           </div>
           <div className="summary-row">
             <span>Total:</span>
-            <span className="price">₹{grandTotal}</span>
+            <span className="price">₹{savedOrderData?.grandTotal}</span>
           </div>
           <div className="summary-row">
             <span>Delivery:</span>
@@ -514,7 +514,7 @@ const Cart = () => {
             <div className="cod-notice">
               <div className="notice-icon">💰</div>
               <h4>Cash on {orderData.deliveryType === 'delivery' ? 'Delivery' : 'Pickup'}</h4>
-              <p>Please keep ₹{grandTotal} ready.</p>
+              <p>Please keep ₹{savedOrderData?.grandTotal} ready.</p>
               <p>You'll receive a WhatsApp confirmation shortly.</p>
             </div>
           )}

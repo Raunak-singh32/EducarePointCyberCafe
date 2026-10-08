@@ -3,115 +3,60 @@ const router = express.Router();
 const multer = require("multer");
 const { cloudinary } = require("../config/cloudinary");
 const streamifier = require("streamifier");
-
-// Store file in memory
-const storage = multer.memoryStorage();
+const AppError = require('../utils/AppError');
+const catchAsync = require('../utils/catchAsync');
 
 const upload = multer({
-  storage,
-  limits: {
-    fileSize: 10 * 1024 * 1024  // 10MB max (Render free tier safe)
-  }
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 10 * 1024 * 1024 }
 });
 
-// ── Helper: Upload buffer to Cloudinary with Promise ──
 const uploadToCloudinary = (buffer, options) => {
-  return new Promise((resolve, reject) => {
-    const uploadStream = cloudinary.uploader.upload_stream(
-      options,
-      (error, result) => {
-        if (error) {
-          console.error('Cloudinary upload error:', error);
-          reject(error);
-        } else {
-          resolve(result);
-        }
-      }
-    );
-    
-    streamifier.createReadStream(buffer).pipe(uploadStream);
-  });
+    return new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(options, (error, result) => {
+            if (error) reject(error);
+            else resolve(result);
+        });
+        streamifier.createReadStream(buffer).pipe(uploadStream);
+    });
 };
 
-router.post("/", upload.single("image"), async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({
-        success: false,
-        message: "No file uploaded"
-      });
+router.post("/", upload.single("image"), catchAsync(async (req, res, next) => {
+    if (!req.file) return next(new AppError('No file uploaded', 400));
+
+    const extension = req.file.originalname.split(".").pop().toLowerCase();
+    const resourceType = ["pdf", "doc", "docx"].includes(extension) ? "raw" : "image";
+
+    let result;
+    try {
+        result = await uploadToCloudinary(req.file.buffer, {
+            folder: "educarepoint-products",
+            resource_type: resourceType,
+            use_filename: true,
+            unique_filename: true,
+            timeout: 60000
+        });
+    } catch (err) {
+        if (err.message?.includes('timeout')) return next(new AppError('Upload timed out. File may be too large.', 504));
+        if (err.message?.includes('authentication')) return next(new AppError('Cloudinary config error. Check env vars.', 500));
+        return next(new AppError(err.message || 'Upload failed', 500));
     }
-
-    console.log('Uploading file:', req.file.originalname, 'Size:', req.file.size);
-
-    const extension = req.file.originalname
-      .split(".")
-      .pop()
-      .toLowerCase();
-
-    const documentExtensions = ["pdf", "doc", "docx"];
-    const resourceType = documentExtensions.includes(extension) ? "raw" : "image";
-
-    // ── Use Promise-based upload for better error handling ──
-    const result = await uploadToCloudinary(req.file.buffer, {
-      folder: "educarepoint-products",
-      resource_type: resourceType,
-      use_filename: true,
-      unique_filename: true,
-      // Timeout for Render free tier
-      timeout: 60000
-    });
-
-    console.log('Upload successful:', result.secure_url);
 
     res.json({
-      success: true,
-      fileUrl: result.secure_url,
-      fileName: req.file.originalname,
-      fileSize: req.file.size
+        success: true,
+        fileUrl: result.secure_url,
+        fileName: req.file.originalname,
+        fileSize: req.file.size
     });
+}));
 
-  } catch (err) {
-    console.error('Upload route error:', err);
-    
-    // Specific error messages
-    if (err.message && err.message.includes('timeout')) {
-      return res.status(504).json({
-        success: false,
-        message: "Upload timed out. File may be too large."
-      });
-    }
-    
-    if (err.message && err.message.includes('authentication')) {
-      return res.status(500).json({
-        success: false,
-        message: "Cloudinary config error. Check env vars."
-      });
-    }
-
-    res.status(500).json({
-      success: false,
-      message: err.message || "Upload failed"
-    });
-  }
-});
-
-// ── NEW: Health check for upload route ──
 router.get("/health", (req, res) => {
-  res.json({ 
-    success: true, 
-    message: "Upload service ready",
-    cloudinary: !!cloudinary.config().cloud_name 
-  });
+    res.json({ success: true, message: "Upload service ready", cloudinary: !!cloudinary.config().cloud_name });
 });
-// TEMPORARY: Test Cloudinary connection
-router.get("/test-cloudinary", async (req, res) => {
-  try {
+
+router.get("/test-cloudinary", catchAsync(async (req, res, next) => {
     const result = await cloudinary.api.ping();
     res.json({ success: true, cloudinary: result });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
+}));
 
 module.exports = router;

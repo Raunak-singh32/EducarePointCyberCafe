@@ -49,5 +49,15 @@ const orderSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 });
+// Index 1: Find all orders by a customer's phone number, newest first
+// ESR: customerPhone = Equality, createdAt = Sort
+orderSchema.index({ customerPhone: 1, createdAt: -1 });
+
+// Index 2: Filter orders by status, newest first (admin dashboard)
+// ESR: status = Equality, createdAt = Sort
+orderSchema.index({ status: 1, createdAt: -1 });
+
+// Index 3: General sort by newest (order listing page)
+orderSchema.index({ createdAt: -1 });
 
 module.exports = mongoose.model('Order', orderSchema);
