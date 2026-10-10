@@ -1,3 +1,4 @@
+const redis = require('../config/redis');
 const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
@@ -23,6 +24,10 @@ const protect = async (req, res, next) => {
             return next(new AppError('Not authorized', 401));
         }
         const token = authHeader.split(' ')[1];
+        const isBlacklisted = await redis.get(`blacklist:${token}`);
+         if (isBlacklisted) {
+         return next(new AppError('Token has been invalidated. Please login again.', 401));
+        }
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         req.user = await User.findById(decoded.id).select('-password');
         if (!req.user) return next(new AppError('User not found', 401));
@@ -88,6 +93,22 @@ router.post('/login',validate(schemas.login), catchAsync(async (req, res, next) 
         token,
         user: { _id: user._id, name: user.name, email: user.email, whatsapp: user.whatsapp, address: user.address }
     });
+}));
+
+// POST /api/auth/logout
+router.post('/logout', protect, catchAsync(async (req, res, next) => {
+    const token = req.headers.authorization.split(' ')[1];
+    
+    // How much time is left on this token?
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const expiresIn = decoded.exp - Math.floor(Date.now() / 1000);
+    
+    // Store in Redis blacklist until token naturally expires
+    if (expiresIn > 0) {
+        await redis.setex(`blacklist:${token}`, expiresIn, 'true');
+    }
+    
+    res.json({ success: true, message: 'Logged out successfully' });
 }));
 
 // GET /api/auth/me (protected)

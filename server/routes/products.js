@@ -6,19 +6,28 @@ const AppError = require('../utils/AppError');
 const catchAsync = require('../utils/catchAsync');
 const validate = require('../middleware/validate');
 const schemas  = require('../validators/schemas');
+const redis = require('../config/redis');
 
-let productCache = null;
-let cacheTime = null;
-const CACHE_TTL = 5 * 60 * 1000;
+// let productCache = null;
+// let cacheTime = null;
+// const CACHE_TTL = 5 * 60 * 1000;
 
+// GET all products (public)
 // GET all products (public)
 router.get('/', catchAsync(async (req, res, next) => {
     const { category, search } = req.query;
-    const now = Date.now();
     const noFilters = !category && !search;
 
-    if (noFilters && productCache && cacheTime && (now - cacheTime) < CACHE_TTL) {
-        return res.json({ success: true, fromCache: true, products: productCache });
+    // Only use cache when no filters applied
+    if (noFilters) {
+        const cached = await redis.get('products:all');
+        if (cached) {
+            return res.json({
+                success: true,
+                fromCache: true,
+                products: JSON.parse(cached)
+            });
+        }
     }
 
     let query = { isActive: true };
@@ -42,14 +51,13 @@ router.get('/', catchAsync(async (req, res, next) => {
         isNew: p.isNew
     }));
 
+    // Store in Redis for 5 minutes (300 seconds)
     if (noFilters) {
-        productCache = formattedProducts;
-        cacheTime = now;
+        await redis.setex('products:all', 300, JSON.stringify(formattedProducts));
     }
 
-    res.json({ success: true, products: formattedProducts });
+    res.json({ success: true, fromCache: false, products: formattedProducts });
 }));
-
 // GET low stock (admin) — BEFORE /:id to avoid route conflict
 router.get('/admin/low-stock', auth, catchAsync(async (req, res, next) => {
     const products = await Product.find({
@@ -134,7 +142,7 @@ router.delete('/:id', auth, catchAsync(async (req, res, next) => {
 
     if (!product) return next(new AppError('Product not found', 404));
 
-    productCache = null;
+    await redis.del('products:all');
     cacheTime = null;
 
     res.json({ success: true, message: 'Product deleted successfully' });
