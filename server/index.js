@@ -1,5 +1,7 @@
 require('dotenv').config();
 require('./config/redis');
+const morgan = require('morgan');
+const logger = require('./config/logger');
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -7,8 +9,12 @@ const path = require('path');
 const session = require('express-session');
 const passport = require('passport');
 const rateLimit = require('express-rate-limit');
+
 const app = express();
 
+const morganStream = {                              
+    write: (message) => logger.info(message.trim())
+};
 const adminLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes window
     max: 20, // Max 20 wrong attempts per IP address
@@ -35,7 +41,7 @@ const corsOptions = {
         if (allowedOrigins.indexOf(origin) !== -1) {
             callback(null, true);
         } else {
-            console.log('Blocked by CORS:', origin);
+            logger.warn(`CORS blocked request from origin: ${origin}`);
             callback(new Error('Not allowed by CORS'));
         }
     },
@@ -45,7 +51,7 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-
+app.use(morgan('dev', { stream: morganStream })); 
 // ========== BODY PARSERS ==========
 app.use(express.json());
 
@@ -67,9 +73,9 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // ========== DATABASE CONNECTION ==========
 mongoose.connect(process.env.MONGODB_URI)
-    .then(() => console.log('✅ MongoDB Connected - EducarePoint'))
+    .then(() => logger.info('MongoDB Connected - EducarePoint'))
     .catch(err => {
-        console.error('❌ MongoDB Error:', err);
+       logger.error('MongoDB connection error', err);
         process.exit(1);
     });
 
@@ -114,5 +120,5 @@ app.use((req, res) => {
 // ========== START SERVER ==========
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-    console.log(`🚀 Server running on port ${PORT}`);
+    logger.info(`Server running on port ${PORT}`);
 });
