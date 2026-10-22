@@ -7,9 +7,8 @@ const { cloudinary } = require('../config/cloudinary');
 const AppError = require('../utils/AppError');
 const catchAsync = require('../utils/catchAsync');
 const validate = require('../middleware/validate');
-const schemas  = require('../validators/schemas');
+const schemas = require('../validators/schemas');
 
-// Memory storage — safe for Render (no disk writes)
 const upload = multer({
     storage: multer.memoryStorage(),
     limits: { fileSize: 5 * 1024 * 1024 }
@@ -26,7 +25,7 @@ const uploadToCloudinary = (buffer, options) => {
 };
 
 // POST /api/orders
-router.post('/', validate(schemas.createOrder),catchAsync(async (req, res, next) => {
+router.post('/', validate(schemas.createOrder), catchAsync(async (req, res, next) => {
     const requiredFields = ['serviceType', 'totalPrice', 'customerName', 'customerPhone'];
     const missing = requiredFields.filter(f => !req.body[f]);
     if (missing.length > 0) return next(new AppError(`Missing required fields: ${missing.join(', ')}`, 400));
@@ -43,10 +42,44 @@ router.post('/', validate(schemas.createOrder),catchAsync(async (req, res, next)
     res.status(201).json({ success: true, order });
 }));
 
-// GET /api/orders (admin)
+// GET /api/orders (admin) — paginated
 router.get('/', catchAsync(async (req, res, next) => {
-    const orders = await Order.find().sort({ createdAt: -1 });
-    res.json({ success: true, orders });
+    const { status } = req.query;
+
+    const page  = Math.max(1, parseInt(req.query.page)  || 1);
+    const limit = Math.min(50, parseInt(req.query.limit) || 20);
+    const skip  = (page - 1) * limit;
+
+    // Build filter query
+    let query = {};
+    if (status && status !== 'all') query.status = status;
+
+    // Date range filter
+    if (req.query.from || req.query.to) {
+        query.createdAt = {};
+        if (req.query.from) query.createdAt.$gte = new Date(req.query.from);
+        if (req.query.to)   query.createdAt.$lte = new Date(req.query.to);
+    }
+
+    const [totalOrders, orders] = await Promise.all([
+        Order.countDocuments(query),
+        Order.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit)
+    ]);
+
+    const totalPages = Math.ceil(totalOrders / limit);
+
+    res.json({
+        success: true,
+        orders,
+        pagination: {
+            currentPage:  page,
+            totalPages,
+            totalOrders,
+            limit,
+            hasNextPage: page < totalPages,
+            hasPrevPage: page > 1
+        }
+    });
 }));
 
 // GET /api/orders/stats/today — BEFORE /:id
@@ -105,7 +138,8 @@ router.put('/:id', catchAsync(async (req, res, next) => {
 }));
 
 // POST /api/orders/:id/payment-screenshot
-router.post('/:id/payment-screenshot',validate(schemas.verifyPayment), upload.single('screenshot'), catchAsync(async (req, res, next) => {
+// validate(schemas.verifyPayment) removed — this route accepts a file not JSON body
+router.post('/:id/payment-screenshot', upload.single('screenshot'), catchAsync(async (req, res, next) => {
     if (!req.file) return next(new AppError('No screenshot file uploaded', 400));
 
     const result = await uploadToCloudinary(req.file.buffer, {
@@ -126,11 +160,8 @@ router.post('/:id/payment-screenshot',validate(schemas.verifyPayment), upload.si
 }));
 
 // PUT /api/orders/:id/verify-payment
-router.put('/:id/verify-payment', catchAsync(async (req, res, next) => {
+router.put('/:id/verify-payment', validate(schemas.verifyPayment), catchAsync(async (req, res, next) => {
     const { paymentStatus } = req.body;
-    if (!['paid', 'failed'].includes(paymentStatus)) {
-        return next(new AppError('paymentStatus must be "paid" or "failed"', 400));
-    }
 
     const order = await Order.findByIdAndUpdate(
         req.params.id,
