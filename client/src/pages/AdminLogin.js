@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { authAPI } from '../services/api';
 
 const AdminLogin = () => {
   // 1. Updated variable naming explicitly to 'email' to match backend schema properties
@@ -16,10 +16,10 @@ const AdminLogin = () => {
 
     try {
       // 2. Clear payload keys aligning fully against backend extraction properties
-      const response = await axios.post('http://localhost:5000/api/auth/login', {
-        email: formData.email, 
-        password: formData.password
-      }, { withCredentials: true });
+      const response = await authAPI.login({
+    email: formData.email,
+    password: formData.password
+    });
 
       // 3. Process backend structural response confirmation
       if (response.data && response.data.token) {
