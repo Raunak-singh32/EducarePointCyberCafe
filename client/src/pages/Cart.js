@@ -198,15 +198,7 @@ const Cart = () => {
           {user && (
             <div className="autofill-banner">✅ Details auto-filled from your account</div>
           )}
-          {!user && (
-            <div className="guest-login-prompt">
-              {/* <p>💡 <strong>Login</strong> to auto-fill your details</p> */}
-              {/* <button type="button" onClick={() => navigate('/login')} className="prompt-login-btn">
-                Login / Sign Up
-              </button> */}
-              {/* <p className="skip-text">or fill manually below</p> */}
-            </div>
-          )}
+          
 
           {/* Items summary */}
           <div className="form-group">
@@ -290,7 +282,7 @@ const Cart = () => {
             <div>
               <h3>Product total: ₹{total}</h3>
             </div>
-            <p>Service charges do not apply to product-only orders. Home delivery is coming soon.</p>
+            <p3>Service price calculated on shop for now . Home delivery is coming soon.</p3>
           </div>
 
           <button type="submit" className="submit-btn">💳 Proceed to Payment →</button>
