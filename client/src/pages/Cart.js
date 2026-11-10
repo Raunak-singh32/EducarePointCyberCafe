@@ -10,7 +10,7 @@ const Cart = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  // step: 'cart' | 'details' | 'payment' | 'upi' | 'cod' | 'success'
+  // step: 'cart' | 'details' | 'payment' | 'success'
   const [step, setStep] = useState('cart');
   const [orderData, setOrderData] = useState({
     customerName: '',
@@ -26,8 +26,7 @@ const Cart = () => {
   const [placedOrderId, setPlacedOrderId]     = useState(null);
   const [savedOrderData, setSavedOrderData]   = useState(null);
 
-  const deliveryCharge = orderData.deliveryType === 'delivery' ? 15 : 0;
-  const grandTotal     = total + deliveryCharge;
+  const grandTotal = total;
 
   // Auto-fill from logged-in user
   useEffect(() => {
@@ -52,14 +51,13 @@ const Cart = () => {
     const res = await orderAPI.create({
       serviceType:   'product-order',
       items:         orderItems,
-      totalPrice:    grandTotal,
+      totalPrice:    total,
       customerName:  orderData.customerName,
       customerPhone: orderData.customerPhone,
-      pickupTime:    orderData.deliveryType === 'delivery' ? 'Home Delivery' : orderData.pickupTime,
-      deliveryType:  orderData.deliveryType,
-      address:       orderData.address || '',
+      pickupTime:    orderData.pickupTime,
+      deliveryType:  'pickup',
+      address:       '',
       paymentMethod,
-      paymentStatus: 'pending',
     });
     return res.data.order._id;
   };
@@ -73,8 +71,8 @@ const Cart = () => {
 📋 Order ID: #${placedOrderId?.slice(-6) || 'N/A'}
 👤 Customer: ${orderData.customerName}
 📞 Phone: ${orderData.customerPhone}
-📦 Delivery: ${orderData.deliveryType === 'pickup' ? 'Pickup' : 'Home Delivery'}
-💰 Total: ₹${savedOrderData?.grandTotal || grandTotal}
+📦 Pickup from shop
+🛍️ Product total: ₹${savedOrderData?.grandTotal ?? grandTotal}
 💳 Payment: ${method?.toUpperCase() || 'N/A'}`;
     window.open(`https://wa.me/${OWNER_PHONE}?text=${encodeURIComponent(msg)}`, '_blank');
   };
@@ -86,8 +84,6 @@ const Cart = () => {
       return alert('Please enter your name');
     if (!orderData.customerPhone.trim() || orderData.customerPhone.length !== 10)
       return alert('Please enter a valid 10-digit phone number');
-    if (orderData.deliveryType === 'delivery' && !orderData.address.trim())
-      return alert('Please enter delivery address');
     setStep('payment');
   };
 
@@ -101,6 +97,7 @@ const Cart = () => {
       if (screenshotFile) {
         const fd = new FormData();
         fd.append('screenshot', screenshotFile);
+        fd.append('customerPhone', orderData.customerPhone);
         await orderAPI.uploadPaymentScreenshot(newOrderId, fd);
       }
       clearCart();
@@ -175,7 +172,7 @@ const Cart = () => {
           ))}
         </div>
 
-        <div className="cart-summary">
+          <div className="cart-summary">
           <h3>Order Summary</h3>
           <div className="summary-row"><span>Subtotal</span><span>₹{total}</span></div>
           <div className="summary-row total"><span>Total</span><span>₹{total}</span></div>
@@ -246,38 +243,25 @@ const Cart = () => {
             />
           </div>
 
-          {/* Delivery method */}
+          {/* Pickup is available now; delivery is coming soon. */}
           <div className="form-group">
-            <label>Delivery Method: *</label>
+            <label>Delivery Method:</label>
             <div className="radio-group delivery-options">
-              <label className={`delivery-option ${orderData.deliveryType === 'pickup' ? 'selected' : ''}`}>
-                <input
-                  type="radio"
-                  name="deliveryType"
-                  value="pickup"
-                  checked={orderData.deliveryType === 'pickup'}
-                  onChange={e => setOrderData({ ...orderData, deliveryType: e.target.value })}
-                />
+              <label className="delivery-option selected">
+                <input type="radio" name="deliveryType" value="pickup" checked readOnly />
                 <span className="delivery-icon">🏪</span>
                 <div className="delivery-info">
                   <strong>Pickup from Shop</strong>
                   <small>Come collect at Educare Point</small>
                 </div>
               </label>
-              <label className={`delivery-option ${orderData.deliveryType === 'delivery' ? 'selected' : ''}`}>
-                <input
-                  type="radio"
-                  name="deliveryType"
-                  value="delivery"
-                  checked={orderData.deliveryType === 'delivery'}
-                  onChange={e => setOrderData({ ...orderData, deliveryType: e.target.value })}
-                />
+              <div className="delivery-option delivery-option-disabled" aria-disabled="true">
                 <span className="delivery-icon">🚚</span>
                 <div className="delivery-info">
                   <strong>Home Delivery</strong>
-                  <small>+₹15 delivery charge</small>
+                  <small>Coming soon</small>
                 </div>
-              </label>
+              </div>
             </div>
           </div>
 
@@ -302,28 +286,11 @@ const Cart = () => {
           )}
           */}
 
-          {orderData.deliveryType === 'delivery' && (
-            <div className="form-group">
-              <label>Delivery Address: *</label>
-              <textarea
-                rows="3"
-                required
-                placeholder="Enter your full address with landmark..."
-                value={orderData.address}
-                onChange={e => setOrderData({ ...orderData, address: e.target.value })}
-              />
-            </div>
-          )}
-
-          {/* Price box — same as Services */}
           <div className="price-box">
             <div>
-              <h3>Total: ₹{grandTotal}</h3>
-              {deliveryCharge > 0 && (
-                <p className="delivery-charge">(Includes ₹15 delivery charge)</p>
-              )}
+              <h3>Product total: ₹{total}</h3>
             </div>
-            <p>Proceed to select payment</p>
+            <p>Service charges do not apply to product-only orders. Home delivery is coming soon.</p>
           </div>
 
           <button type="submit" className="submit-btn">💳 Proceed to Payment →</button>
@@ -344,15 +311,15 @@ const Cart = () => {
         <h2>💳 Choose Payment Method</h2>
 
         <div className="payment-methods">
-          <div className="payment-card" onClick={() => setStep('upi')}>
+          <div className="payment-card payment-card-disabled" aria-disabled="true">
             <div className="payment-icon">📱</div>
             <h3>Pay Now (UPI)</h3>
-            <p>Scan QR &amp; pay instantly</p>
+            <p>Coming soon</p>
           </div>
           <div className="payment-card" onClick={() => handleCODSubmit()}>
             <div className="payment-icon">💵</div>
-            <h3>Cash on {orderData.deliveryType === 'delivery' ? 'Delivery' : 'Pickup'}</h3>
-            <p>Pay when you receive</p>
+            <h3>Cash on Pickup</h3>
+            <p>Pay when you collect your order</p>
           </div>
         </div>
 
@@ -471,7 +438,8 @@ const Cart = () => {
         <h2>Order {isUPI ? 'Submitted!' : 'Confirmed!'}</h2>
 
         <div className="order-summary-card">
-          <h3>Order #{placedOrderId?.slice(-6)}</h3>
+          <h3>Order ID: {placedOrderId}</h3>
+          <p style={{ fontSize: '0.85rem', opacity: 0.8 }}>Save this full ID with your phone number to check this order later.</p>
 
           <div className="summary-row">
             <span>Customer:</span><span>{orderData.customerName}</span>
@@ -480,12 +448,12 @@ const Cart = () => {
             <span>Phone:</span><span>{orderData.customerPhone}</span>
           </div>
           <div className="summary-row">
-            <span>Total:</span>
+            <span>Product total:</span>
             <span className="price">₹{savedOrderData?.grandTotal}</span>
           </div>
           <div className="summary-row">
             <span>Delivery:</span>
-            <span>{orderData.deliveryType === 'delivery' ? '🚚 Home Delivery' : '🏪 Pickup'}</span>
+            <span>🏪 Pickup from shop</span>
           </div>
           {orderData.deliveryType === 'pickup' && (
             <div className="summary-row">
@@ -513,7 +481,7 @@ const Cart = () => {
           ) : (
             <div className="cod-notice">
               <div className="notice-icon">💰</div>
-              <h4>Cash on {orderData.deliveryType === 'delivery' ? 'Delivery' : 'Pickup'}</h4>
+              <h4>Cash on Pickup</h4>
               <p>Please keep ₹{savedOrderData?.grandTotal} ready.</p>
               <p>You'll receive a WhatsApp confirmation shortly.</p>
             </div>

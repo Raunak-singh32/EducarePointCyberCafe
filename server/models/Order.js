@@ -14,6 +14,7 @@ const orderSchema = new mongoose.Schema({
     quantity: Number
   }],
   totalPrice: { type: Number, required: true },
+  serviceCostPending: { type: Boolean, default: false },
   customerName: { type: String, required: true },
   customerPhone: { type: String, required: true },
   

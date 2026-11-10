@@ -52,10 +52,19 @@ router.get('/', catchAsync(async (req, res, next) => {
     if (sort === 'newest')     sortOption = { createdAt: -1 };
 
     // Run both queries in parallel — count + data
-    const [totalProducts, products] = await Promise.all([
+    const [totalProducts, queriedProducts] = await Promise.all([
         Product.countDocuments(query),
-        Product.find(query).sort(sortOption).skip(skip).limit(limit)
+        sort === 'price_asc' || sort === 'price_desc'
+            ? Product.find(query)
+            : Product.find(query).sort(sortOption).skip(skip).limit(limit)
     ]);
+    const products = sort === 'price_asc' || sort === 'price_desc'
+        ? queriedProducts.sort((a, b) => {
+            const priceA = Number(String(a.price).replace(/[^\d.]/g, '')) || 0;
+            const priceB = Number(String(b.price).replace(/[^\d.]/g, '')) || 0;
+            return (sort === 'price_asc' ? 1 : -1) * (priceA - priceB);
+        }).slice(skip, skip + limit)
+        : queriedProducts;
 
     const totalPages = Math.ceil(totalProducts / limit);
 
@@ -107,7 +116,7 @@ router.get('/admin/low-stock', auth, catchAsync(async (req, res, next) => {
 
 // GET single product (public)
 router.get('/:id', catchAsync(async (req, res, next) => {
-    const product = await Product.findById(req.params.id);
+    const product = await Product.findOne({ _id: req.params.id, isActive: true });
     if (!product) return next(new AppError('Product not found', 404));
 
     res.json({

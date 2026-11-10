@@ -6,6 +6,7 @@ const statusLabel = {
   processing: { text: 'Processing',  color: '#3b82f6' },
   ready:      { text: 'Ready',       color: '#8b5cf6' },
   delivered:  { text: 'Delivered',   color: '#10b981' },
+  completed:  { text: 'Completed',   color: '#10b981' },
   cancelled:  { text: 'Cancelled',   color: '#ef4444' },
 };
 
@@ -18,6 +19,7 @@ const paymentLabel = {
 
 const OrderHistory = () => {
   const [phone, setPhone]       = useState('');
+  const [orderId, setOrderId]   = useState('');
   const [orders, setOrders]     = useState([]);
   const [searched, setSearched] = useState(false);
   const [loading, setLoading]   = useState(false);
@@ -25,15 +27,15 @@ const OrderHistory = () => {
 
   const handleSearch = async (e) => {
     e.preventDefault();
-    if (phone.length !== 10) {
-      setError('Please enter a valid 10-digit phone number');
+    if (phone.length !== 10 || orderId.trim().length !== 24) {
+      setError('Enter your 10-digit phone number and full 24-character order ID');
       return;
     }
     setLoading(true);
     setError('');
     setOrders([]);
     try {
-      const res = await orderAPI.getByPhone(phone);
+      const res = await orderAPI.lookup(phone, orderId.trim());
       setOrders(res.data.orders);
       setSearched(true);
     } catch (err) {
@@ -52,7 +54,7 @@ const OrderHistory = () => {
     <div className="history-page">
       <h2>📋 My Orders</h2>
       <p style={{ textAlign: 'center', marginBottom: '1.5rem', opacity: 0.7 }}>
-        Enter the phone number you used while placing the order
+        Enter the phone number and full order ID shown after checkout
       </p>
 
       <form onSubmit={handleSearch} className="search-form">
@@ -65,6 +67,14 @@ const OrderHistory = () => {
             setError('');
           }}
           maxLength={10}
+          required
+        />
+        <input
+          type="text"
+          placeholder="Full order ID (24 characters)"
+          value={orderId}
+          onChange={(e) => { setOrderId(e.target.value.replace(/[^a-f0-9]/gi, '').slice(0, 24)); setError(''); }}
+          maxLength={24}
           required
         />
         <button type="submit" disabled={loading}>
@@ -81,9 +91,9 @@ const OrderHistory = () => {
       {searched && orders.length === 0 && !loading && (
         <div style={{ textAlign: 'center', padding: '2rem', opacity: 0.7 }}>
           <p style={{ fontSize: '2rem' }}>📭</p>
-          <p>No orders found for this number.</p>
+          <p>No order matched that phone number and order ID.</p>
           <p style={{ fontSize: '0.85rem', marginTop: '0.5rem' }}>
-            Make sure you enter the same number used while ordering.
+            Check both details from your order confirmation.
           </p>
         </div>
       )}
@@ -117,23 +127,22 @@ const OrderHistory = () => {
                 {order.printType ? ` — ${order.printType === 'color' ? 'Color' : 'Black & White'}` : ''}
               </p>
               {order.copies > 1 && <p><strong>Copies:</strong> {order.copies}</p>}
-              <p><strong>Amount:</strong> ₹{order.totalPrice}</p>
+              {order.serviceCostPending ? (
+                <>
+                  {order.items?.length > 0 && <p><strong>Product subtotal:</strong> ₹{order.totalPrice}</p>}
+                  <p><strong>Service cost:</strong> Confirmed at shop</p>
+                </>
+              ) : order.serviceType === 'product-order' ? (
+                <p><strong>Product total:</strong> ₹{order.totalPrice}</p>
+              ) : (
+                <p><strong>Amount:</strong> ₹{order.totalPrice}</p>
+              )}
               <p>
                 <strong>Payment:</strong>{' '}
                 {order.paymentMethod === 'cod' ? 'Cash on Delivery' : 'UPI'}{' '}
                 <span style={{ color: payment.color, fontWeight: 600 }}>({payment.text})</span>
               </p>
-              <p><strong>Delivery:</strong>{' '}
-                {order.deliveryType === 'pickup'
-                  ? `Pickup — ${order.pickupTime || 'time not set'}`
-                  : `Home Delivery — ${order.address || ''}`}
-              </p>
-              {order.fileName && (
-                <p><strong>File:</strong> {order.fileName}</p>
-              )}
-              {order.notes && (
-                <p><strong>Notes:</strong> {order.notes}</p>
-              )}
+              <p><strong>Delivery:</strong> {order.deliveryType === 'pickup' ? `Pickup — ${order.pickupTime || 'time not set'}` : 'Home Delivery'}</p>
               <p style={{ opacity: 0.6, fontSize: '0.8rem' }}>
                 Placed on {new Date(order.createdAt).toLocaleDateString('en-IN', {
                   day: 'numeric', month: 'short', year: 'numeric',

@@ -1,15 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const https = require('https');
-const http = require('http');
 const jwt = require('jsonwebtoken');
 
 // Backend proxy: fetches file from Cloudinary and streams it to admin with Content-Disposition
-// Supports token in Authorization header OR in ?token= query parameter (for window.open downloads)
+// Admin JWT is accepted only in the Authorization header.
 router.get('/', (req, res) => {
   try {
     const authHeader = req.headers.authorization;
-    const token = (authHeader && authHeader.startsWith('Bearer ') && authHeader.split(' ')[1]) || req.query.token;
+    const token = authHeader && authHeader.startsWith('Bearer ') && authHeader.split(' ')[1];
 
     if (!token) {
       return res.status(401).json({ success: false, message: 'Not authorized - no token' });
@@ -45,27 +44,20 @@ router.get('/', (req, res) => {
 
     // Decode and sanitize filename
     const safeFileName = fileName
-      ? decodeURIComponent(fileName).replace(/[^\w.\-\s]/g, '_')
+      ? String(fileName).replace(/[^\w.\-\s]/g, '_')
       : 'order-file.pdf';
 
-    const protocol = fileUrl.startsWith('https') ? https : http;
+    const protocol = https;
 
     const request = protocol.get(fileUrl, (cloudRes) => {
       // Handle HTTP redirects from Cloudinary
       if (cloudRes.statusCode === 301 || cloudRes.statusCode === 302) {
-        const redirectUrl = cloudRes.headers.location;
-        const redirectProtocol = redirectUrl.startsWith('https') ? https : http;
-
-        redirectProtocol.get(redirectUrl, (redirectRes) => {
-          res.setHeader('Content-Disposition', `attachment; filename="${safeFileName}"`);
-          res.setHeader('Content-Type', redirectRes.headers['content-type'] || 'application/octet-stream');
-          res.setHeader('Access-Control-Allow-Origin', '*');
-          redirectRes.pipe(res);
-        }).on('error', (err) => {
-          console.error('Redirect download error:', err);
-          if (!res.headersSent) res.status(500).json({ success: false, message: 'Redirect failed' });
-        });
-        return;
+        cloudRes.resume();
+        return res.status(502).json({ success: false, message: 'Cloud file redirects are not supported' });
+      }
+      if (cloudRes.statusCode < 200 || cloudRes.statusCode >= 300) {
+        cloudRes.resume();
+        return res.status(502).json({ success: false, message: 'Cloud file could not be downloaded' });
       }
 
       // Stream file to admin with download headers

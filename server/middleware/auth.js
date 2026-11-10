@@ -3,32 +3,29 @@ const AppError = require('../utils/AppError');
 
 const redis = require('../config/redis');
 
-const auth = (req, res, next) => {
+const auth = async (req, res, next) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return next(new AppError('Not authorized - no token', 401));
+    }
+    const token = authHeader.slice(7);
+    let isBlacklisted;
     try {
-        const authHeader = req.headers.authorization;
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            return next(new AppError('Not authorized - no token', 401));
-        }
+        isBlacklisted = await redis.get(`blacklist:${token}`);
+    } catch (_) {
+        return next(new AppError('Authentication service unavailable', 503));
+    }
+    if (isBlacklisted) return next(new AppError('Token has been invalidated. Please login again.', 401));
 
-        const token = authHeader.split(' ')[1];
-
-        // Check blacklist
-        redis.get(`blacklist:${token}`).then(isBlacklisted => {
-            if (isBlacklisted) {
-                return next(new AppError('Token has been invalidated. Please login again.', 401));
-            }
-
-            const decoded = jwt.verify(token, process.env.JWT_SECRET);
-            if (decoded.role !== 'admin') {
-                return next(new AppError('Administrator access required', 403));
-            }
-            req.admin = decoded;
-            next();
-        }).catch(() => next(new AppError('Authentication service unavailable', 503)));
-
-    } catch (error) {
+    let decoded;
+    try {
+        decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (_) {
         return next(new AppError('Token invalid or expired', 401));
     }
+    if (decoded.role !== 'admin') return next(new AppError('Administrator access required', 403));
+    req.admin = decoded;
+    return next();
 };
 
 

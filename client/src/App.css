@@ -4418,6 +4418,20 @@ white-space: nowrap;
   font-size: 12px;
 }
 
+.delivery-option-disabled,
+.payment-card-disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  pointer-events: none;
+  filter: grayscale(0.2);
+}
+
+.payment-card-disabled:hover {
+  transform: none;
+  border-color: rgba(255,255,255,0.1);
+  background: transparent;
+}
+
 /* ── Payment Step ── */
 .payment-step {
   max-width: 500px;

@@ -1,4 +1,7 @@
 require('dotenv').config();
+const requiredEnv = ['MONGODB_URI', 'JWT_SECRET', 'REDIS_URL', 'CLIENT_URL', 'CLOUDINARY_CLOUD_NAME', 'CLOUDINARY_API_KEY', 'CLOUDINARY_API_SECRET', 'ADMIN_EMAIL', 'ADMIN_PASSWORD', 'GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET'];
+const missingEnv = requiredEnv.filter((key) => !process.env[key]);
+if (missingEnv.length) throw new Error(`Missing required environment variables: ${missingEnv.join(', ')}`);
 require('./config/redis');
 const morgan = require('morgan');
 const logger = require('./config/logger');
@@ -24,6 +27,27 @@ const adminLimiter = rateLimit({
     },
     standardHeaders: true, 
     legacyHeaders: false,  
+});
+const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 300,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { success: false, message: 'Too many requests. Please try again later.' }
+});
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 10,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { success: false, message: 'Too many sign-in attempts. Please try again later.' }
+});
+const uploadLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 20,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { success: false, message: 'Upload limit reached. Please try again later.' }
 });
 
 // ========== CORS CONFIGURATION ==========
@@ -51,13 +75,14 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+app.use('/api', apiLimiter);
 app.use(morgan('dev', { stream: morganStream })); 
 // ========== BODY PARSERS ==========
 app.use(express.json());
 
 // ========== SESSION (required for passport) ==========
 app.use(session({
-    secret: process.env.JWT_SECRET || 'educare-session-secret-fallback',
+    secret: process.env.JWT_SECRET,
     resave: false,
     saveUninitialized: false,
     cookie: {
@@ -84,11 +109,16 @@ mongoose.connect(process.env.MONGODB_URI)
     });
 
 // ========== ROUTES ==========
+app.use('/api/auth/admin/login', adminLimiter);
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
+app.use('/api/upload', uploadLimiter);
+app.use('/api/orders/lookup', authLimiter);
+app.use('/api/orders/:id/payment-screenshot', uploadLimiter);
 app.use('/api/products', require('./routes/products'));
 app.use('/api/orders', require('./routes/orders'));
 app.use('/api/upload', require('./routes/upload'));
 app.use('/api/download', require('./routes/download')); // ✅ PDF download proxy
-app.use('/api/auth/admin/login', adminLimiter);
 app.use('/api/auth', require('./routes/auth').router);
 
 // ========== TEST ROUTES ==========

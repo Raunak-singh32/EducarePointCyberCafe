@@ -60,21 +60,18 @@ EducarePoint/
 │       │   ├── Cart.js              # Cart flow (4 steps):
 │       │   │                        # Step 1: Cart view (items, qty, subtotal)
 │       │   │                        # Step 2: Order details (name, phone, delivery type)
-│       │   │                        # Step 3: Payment method (UPI / COD)
-│       │   │                        # Step 4: UPI (QR + screenshot upload) or COD confirm
+│       │   │                        # Step 3: Cash on pickup (UPI coming soon)
 │       │   │                        # Success: order summary + WhatsApp notify owner button
 │       │   │                        # Uses SAME CSS classes as Services.js for consistent UI
 │       │   │
-│       │   ├── Services.js          # Service ordering flow (5 steps):
+│       │   ├── Services.js          # Service ordering flow:
 │       │   │                        # Step 1: Order form (service type, file upload, page range,
 │       │   │                        #          stationery items, customer details, delivery)
-│       │   │                        # Step 2: Payment method (UPI / COD)
-│       │   │                        # Step 3: UPI (QR + screenshot upload)
+│       │   │                        # Service price confirmed at shop; cash on pickup only
 │       │   │                        # Success: order summary + WhatsApp notify owner button
-│       │   │                        # Has PDF page count detection, auto price calculator
+│       │   │                        # Has PDF page count detection; home delivery coming soon
 │       │   │
-│       │   ├── OrderHistory.js      # Customer order lookup by phone number (secure — 
-│       │   │                        # only fetches that customer's orders, NOT all orders)
+│       │   ├── OrderHistory.js      # Customer order lookup by phone + full order ID
 │       │   │                        # Shows status, payment, delivery, WhatsApp contact button
 │       │   │
 │       │   ├── AdminLogin.js        # JWT login for admin (hidden from navbar)
@@ -144,7 +141,7 @@ EducarePoint/
 │   │   │
 │   │   ├── orders.js                # POST /api/orders (create order)
 │   │   │                            # GET /api/orders (all orders — admin only)
-│   │   │                            # GET /api/orders/by-phone/:phone (customer lookup — secure)
+│   │   │                            # POST /api/orders/lookup (phone + order ID; minimal details)
 │   │   │                            # PUT /api/orders/:id (update status)
 │   │   │                            # POST /api/orders/:id/payment-screenshot
 │   │   │                            # PUT /api/orders/:id/verify-payment
@@ -152,8 +149,8 @@ EducarePoint/
 │   │   │
 │   │   ├── upload.js                # POST /api/upload (Cloudinary upload)
 │   │   │                            # Uses multer memoryStorage + streamifier
-│   │   │                            # Supports: PDF, DOC, DOCX, JPG, PNG, JPEG
-│   │   │                            # resource_type: 'raw' for PDFs, 'image' for images
+│   │   │                            # Customer uploads: PDF, DOC, DOCX; admin images use protected endpoint
+│   │   │                            # Checks file type and signature; has upload rate limits
 │   │   │                            # GET /api/upload/health (check Cloudinary connection)
 │   │   │
 │   │   ├── auth.js                  # POST /api/auth/register
@@ -190,6 +187,10 @@ EducarePoint/
 ```
 MONGODB_URI=mongodb+srv://...
 JWT_SECRET=...
+REDIS_URL=rediss://...
+CLIENT_URL=https://educare-point-cyber-cafe.vercel.app
+ADMIN_EMAIL=...
+ADMIN_PASSWORD=...
 CLOUDINARY_CLOUD_NAME=...
 CLOUDINARY_API_KEY=...
 CLOUDINARY_API_SECRET=...
@@ -215,16 +216,17 @@ REACT_APP_GEMINI_KEY=...  (for future AI chatbot)
 - Product detail page with share + WhatsApp order
 - Compare up to 3 products side-by-side
 - Cart: add, remove, update quantity
-- Cart checkout flow (matches Services UI): details → payment → UPI/COD → success
-- Service ordering: Print (B&W ₹2, Color ₹5), Xerox (₹1), Scan (₹5), Lamination (₹30), Binding (₹50)
+- Cart checkout flow: details → cash on pickup → success; UPI coming soon
+- Service ordering: customer chooses a service, then the shop confirms its price before work starts
 - PDF file upload with auto page count detection
 - Stationery item add-on during service order
-- Delivery type: Pickup or Home Delivery (+₹15)
-- Payment: UPI (QR + screenshot) or Cash on Delivery
+- Delivery: Pickup from shop; home delivery coming soon
+- Payment: Cash on pickup; UPI coming soon
+- Product add-on prices remain visible separately from the shop-confirmed service charge
 - WhatsApp owner notification button on success screen
 - Google Sign-In + email/password login
 - Auto-fill checkout form from user profile
-- Order history lookup by phone number (secure)
+- Order history lookup by phone number and full order ID
 - PWA installable on mobile (manifest.json)
 
 ### Admin Side (Access: press A→D→M on keyboard)
@@ -262,12 +264,12 @@ REACT_APP_GEMINI_KEY=...  (for future AI chatbot)
 | Double order creation | Removed duplicate `orderAPI.create()` call in Services.js |
 | `orderId.slice` crash | `res.data.order._id` was correct path; fixed undefined state |
 | UPI screenshot wrong ID | `createOrder()` now returns `newOrderId`; used directly in `handleUPIOrderSubmit` |
-| All orders exposed to customers | Added `/api/orders/by-phone/:phone` endpoint (secure, server-side filter) |
+| Phone-only order lookup exposed private order details | Require phone + full order ID and return only non-sensitive order summary fields |
 | WhatsApp blocked by browser | Moved from auto `window.open()` after async to manual tap button |
 | Cart page ugly/stretched | Rewrote Cart.js to use same CSS classes as Services.js |
 | CSS duplicates | Merged and deduped App.css (duplicate @keyframes spin, .spinner, .badge, etc.) |
 | Product cache | 5-min in-memory cache on `GET /api/products` (reduces DB calls for concurrent users) |
-| Rate limiting | `express-rate-limit`: 60 requests/min per IP on all `/api/` routes |
+| Rate limiting | Global API limits plus stricter sign-in and upload limits |
 | MongoDB auto-delete | TTL index on `deliveredAt` field → auto-deletes orders 30 days after delivery |
 
 ---

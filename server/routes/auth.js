@@ -25,23 +25,21 @@ const generateAdminToken = () => jwt.sign(
 
 // Customer auth middleware (different from admin middleware/auth.js)
 const protect = async (req, res, next) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) return next(new AppError('Not authorized', 401));
+    const token = authHeader.slice(7);
+    let isBlacklisted;
+    try { isBlacklisted = await redis.get(`blacklist:${token}`); }
+    catch (_) { return next(new AppError('Authentication service unavailable', 503)); }
+    if (isBlacklisted) return next(new AppError('Token has been invalidated. Please login again.', 401));
+    let decoded;
+    try { decoded = jwt.verify(token, process.env.JWT_SECRET); }
+    catch (_) { return next(new AppError('Token invalid or expired', 401)); }
     try {
-        const authHeader = req.headers.authorization;
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            return next(new AppError('Not authorized', 401));
-        }
-        const token = authHeader.split(' ')[1];
-        const isBlacklisted = await redis.get(`blacklist:${token}`);
-         if (isBlacklisted) {
-         return next(new AppError('Token has been invalidated. Please login again.', 401));
-        }
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
         req.user = await User.findById(decoded.id).select('-password');
         if (!req.user) return next(new AppError('User not found', 401));
-        next();
-    } catch (error) {
-        return next(new AppError('Token invalid or expired', 401));
-    }
+        return next();
+    } catch (error) { return next(error); }
 };
 
 // POST /api/auth/register
@@ -157,7 +155,7 @@ router.put('/update', protect, catchAsync(async (req, res, next) => {
 router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
 
 router.get('/google/callback',
-    passport.authenticate('google', { failureRedirect: `${process.env.CLIENT_URL}/login?error=google_failed` }),
+    passport.authenticate('google', { failureRedirect: `${process.env.CLIENT_URL || 'https://educare-point-cyber-cafe.vercel.app'}/login?error=google_failed` }),
     async (req, res, next) => {
       try {
         const token = generateToken(req.user._id);
@@ -166,7 +164,7 @@ router.get('/google/callback',
             token,
             user: { _id: req.user._id, name: req.user.name, email: req.user.email, whatsapp: req.user.whatsapp, address: req.user.address }
         }));
-        res.redirect(`${process.env.CLIENT_URL}/login?oauth_code=${encodeURIComponent(code)}`);
+        res.redirect(`${process.env.CLIENT_URL || 'https://educare-point-cyber-cafe.vercel.app'}/login?oauth_code=${encodeURIComponent(code)}`);
       } catch (error) {
         next(error);
       }

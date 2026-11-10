@@ -1,4 +1,5 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const router = express.Router();
 const Order = require('../models/Order');
 const multer = require('multer');
@@ -10,6 +11,9 @@ const validate = require('../middleware/validate');
 const schemas = require('../validators/schemas');
 const auth = require('../middleware/auth');
 const Product = require('../models/Product');
+const redis = require('../config/redis');
+const { parsePrice } = require('../utils/orderPricing');
+const hasExpectedSignature = require('../utils/fileValidation');
 
 const upload = multer({
     storage: multer.memoryStorage(),
@@ -29,7 +33,7 @@ const uploadToCloudinary = (buffer, options) => {
 // POST /api/orders - Supports both guest customers and authenticated users
 router.post('/', validate(schemas.createOrder), catchAsync(async (req, res, next) => {
     const requiredFields = ['serviceType', 'totalPrice', 'customerName', 'customerPhone'];
-    const missing = requiredFields.filter(f => !req.body[f]);
+    const missing = requiredFields.filter(f => req.body[f] === undefined || req.body[f] === null || req.body[f] === '');
     if (missing.length > 0) return next(new AppError(`Missing required fields: ${missing.join(', ')}`, 400));
 
     // Clean phone number (strip +91, dashes, spaces)
@@ -39,62 +43,96 @@ router.post('/', validate(schemas.createOrder), catchAsync(async (req, res, next
         return next(new AppError('Customer phone must be a valid 10-digit number', 400));
     }
 
-    if (req.body.deliveryType === 'delivery' && !req.body.address?.trim()) {
-        return next(new AppError('Delivery address is required for home delivery orders', 400));
+    if (req.body.fileUrl) {
+        try {
+            const fileUrl = new URL(req.body.fileUrl);
+            if (fileUrl.protocol !== 'https:' || !/(^|\.)cloudinary\.com$/i.test(fileUrl.hostname)) throw new Error();
+        } catch (_) {
+            return next(new AppError('Invalid uploaded file URL', 400));
+        }
     }
 
-    let totalPrice = Number(req.body.totalPrice);
-    
-    // Validate items and recalculate / protect pricing
-    if (req.body.items?.length) {
-        const validItemIds = req.body.items.map(item => item.itemId).filter(Boolean);
-        const products = await Product.find({
-            _id: { $in: validItemIds },
-            isActive: true
-        });
-        const productMap = new Map(products.map(product => [String(product._id), product]));
-
-        const hasUnknownProduct = req.body.items.some(item => !item.itemId || !productMap.has(String(item.itemId)));
-        if (hasUnknownProduct) return next(new AppError('One or more selected products are invalid or out of stock', 400));
-
-        const itemsTotal = req.body.items.reduce((sum, item) => {
-            const p = productMap.get(String(item.itemId));
-            return sum + (Number(p.price) || 0) * (Number(item.quantity) || 1);
-        }, 0);
-
-        // If it's pure stationery retail cart order, enforce computed price
-        if (req.body.serviceType === 'product-order') {
-            totalPrice = itemsTotal + (req.body.deliveryType === 'delivery' ? 15 : 0);
-        } else {
-            // For print/cyber cafe services with stationery add-ons:
-            // Ensure total includes at least the items total and delivery charge
-            const minExpected = itemsTotal + (req.body.deliveryType === 'delivery' ? 15 : 0);
-            if (totalPrice < minExpected) {
-                return next(new AppError('Invalid order total price calculation', 400));
-            }
+    const pages = Number(req.body.pages || 1);
+    const copies = Number(req.body.copies || 1);
+    const itemRows = req.body.items || [];
+    if (req.body.serviceType === 'product-order' && itemRows.length === 0) {
+        return next(new AppError('Add at least one product to the order', 400));
+    }
+    const productsById = new Map();
+    if (itemRows.length) {
+        const ids = [...new Set(itemRows.map(item => String(item.itemId)))];
+        const found = await Product.find({ _id: { $in: ids }, isActive: true });
+        for (const product of found) productsById.set(String(product._id), product);
+        if (itemRows.some(item => !productsById.has(String(item.itemId)))) {
+            return next(new AppError('One or more selected products are invalid', 400));
         }
+    }
+    const itemTotal = itemRows.reduce((sum, item) => {
+        const product = productsById.get(String(item.itemId));
+        const unitPrice = parsePrice(product.price);
+        if (!Number.isFinite(unitPrice)) throw new AppError(`Product ${product.name} has an invalid price`, 400);
+        return sum + unitPrice * item.quantity;
+    }, 0);
+    const totalPrice = itemTotal;
 
-        // Atomically decrement stock count for ordered items
-        for (const item of req.body.items) {
-            if (item.itemId) {
-                await Product.findByIdAndUpdate(item.itemId, {
-                    $inc: { quantity: -Math.max(1, Number(item.quantity) || 1) }
-                });
-            }
+    const normalizedItems = itemRows.map(item => {
+        const product = productsById.get(String(item.itemId));
+        const unitPrice = parsePrice(product.price);
+        if (!Number.isFinite(unitPrice)) throw new AppError(`Product ${product.name} has an invalid price`, 400);
+        return { itemId: product._id, name: product.name, price: unitPrice, quantity: item.quantity };
+    });
+    const quantities = new Map();
+    for (const item of normalizedItems) quantities.set(String(item.itemId), (quantities.get(String(item.itemId)) || 0) + item.quantity);
+    const reserved = [];
+    try {
+        for (const [id, quantity] of quantities) {
+            const product = await Product.findOneAndUpdate(
+                { _id: id, isActive: true, quantity: { $gte: quantity } },
+                { $inc: { quantity: -quantity } },
+                { new: true }
+            );
+            if (!product) throw new AppError('One or more items no longer have enough stock', 409);
+            reserved.push([id, quantity]);
         }
+        if (reserved.length) await redis.del('products:all').catch(() => {});
+    } catch (error) {
+        await Promise.all(reserved.map(([id, quantity]) => Product.updateOne({ _id: id }, { $inc: { quantity } }).catch(() => {})));
+        if (reserved.length) await redis.del('products:all').catch(() => {});
+        return next(error);
     }
 
     const orderData = {
-        ...req.body,
-        customerPhone: cleanPhone,
+        serviceType: req.body.serviceType,
+        printType: req.body.printType || '',
+        paperSize: req.body.paperSize || 'A4',
+        pages,
+        pageRange: req.body.pageRange || '1',
+        copies,
+        items: normalizedItems,
         totalPrice,
+        serviceCostPending: req.body.serviceType !== 'product-order',
+        customerName: req.body.customerName,
+        customerPhone: cleanPhone,
+        deliveryType: req.body.deliveryType,
+        paymentMethod: req.body.paymentMethod,
+        paymentStatus: 'pending',
+        status: 'pending',
+        notes: req.body.notes || '',
+        fileUrl: req.body.fileUrl || '',
+        fileName: req.body.fileName || '',
         pickupTime: req.body.pickupTime || '',
         address: req.body.address || '',
         updatedAt: Date.now()
     };
 
     const order = new Order(orderData);
-    await order.save();
+    try {
+        await order.save();
+    } catch (error) {
+        await Promise.all(reserved.map(([id, quantity]) => Product.updateOne({ _id: id }, { $inc: { quantity } }).catch(() => {})));
+        if (reserved.length) await redis.del('products:all').catch(() => {});
+        return next(error);
+    }
     res.status(201).json({ success: true, order });
 }));
 
@@ -166,20 +204,19 @@ router.get('/stats/today', auth, catchAsync(async (req, res, next) => {
     });
 }));
 
-// GET /api/orders/by-phone/:phone — Customer order tracking (Accessible with or without login)
-router.get('/by-phone/:phone', catchAsync(async (req, res, next) => {
-    const rawPhone = String(req.params.phone).replace(/\D/g, '');
+// Customer lookup requires both the phone and the order ID; private order data is omitted.
+router.post('/lookup', catchAsync(async (req, res, next) => {
+    const rawPhone = String(req.body.phone || '').replace(/\D/g, '');
     const cleanPhone = rawPhone.length > 10 ? rawPhone.slice(-10) : rawPhone;
 
     if (cleanPhone.length !== 10) {
         return next(new AppError('Please enter a valid 10-digit phone number', 400));
     }
 
-    const orders = await Order.find({ customerPhone: cleanPhone })
-        .sort({ createdAt: -1 })
-        .select('serviceType printType paperSize pages pageRange copies items totalPrice status paymentMethod paymentStatus deliveryType pickupTime address createdAt fileUrl fileName notes');
-
-    res.json({ success: true, orders });
+    if (!mongoose.isValidObjectId(req.body.orderId)) return next(new AppError('Please enter a valid order ID', 400));
+    const order = await Order.findOne({ _id: req.body.orderId, customerPhone: cleanPhone })
+        .select('serviceType printType paperSize pages pageRange copies items totalPrice serviceCostPending status paymentMethod paymentStatus deliveryType pickupTime createdAt');
+    res.json({ success: true, orders: order ? [order] : [] });
 }));
 
 // PUT /api/orders/:id (admin status updates)
@@ -206,6 +243,17 @@ router.put('/:id', auth, validate(schemas.updateOrderStatus), catchAsync(async (
 // POST /api/orders/:id/payment-screenshot - Customer payment upload (Works with or without login)
 router.post('/:id/payment-screenshot', upload.single('screenshot'), catchAsync(async (req, res, next) => {
     if (!req.file) return next(new AppError('No screenshot file uploaded', 400));
+    if (!mongoose.isValidObjectId(req.params.id)) return next(new AppError('Invalid order ID', 400));
+    const screenshotExtension = String(req.file.originalname).split('.').pop().toLowerCase();
+    const allowedImageMimes = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp' };
+    if (!allowedImageMimes[screenshotExtension] || req.file.mimetype !== allowedImageMimes[screenshotExtension] || !hasExpectedSignature(screenshotExtension, req.file.buffer)) {
+        return next(new AppError('Please upload a valid JPG, PNG, or WEBP screenshot', 400));
+    }
+    const phone = String(req.body.customerPhone || '').replace(/\D/g, '').slice(-10);
+    if (phone.length !== 10) return next(new AppError('A valid customer phone number is required', 400));
+
+    const existingOrder = await Order.findOne({ _id: req.params.id, customerPhone: phone, paymentMethod: 'upi', paymentStatus: 'pending' });
+    if (!existingOrder) return next(new AppError('Order not found or payment proof is no longer accepted', 404));
 
     const result = await uploadToCloudinary(req.file.buffer, {
         folder: 'educare-payment-screenshots',
@@ -214,8 +262,8 @@ router.post('/:id/payment-screenshot', upload.single('screenshot'), catchAsync(a
         fetch_format: 'auto'
     });
 
-    const order = await Order.findByIdAndUpdate(
-        req.params.id,
+    const order = await Order.findOneAndUpdate(
+        { _id: req.params.id, customerPhone: phone, paymentMethod: 'upi', paymentStatus: 'pending' },
         { paymentScreenshot: result.secure_url, updatedAt: Date.now() },
         { new: true }
     );

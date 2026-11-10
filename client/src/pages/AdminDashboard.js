@@ -110,7 +110,7 @@ const AdminDashboard = () => {
     try {
       const uploadData = new FormData();
       uploadData.append('image', file);
-      const res = await uploadAPI.uploadFile(uploadData);
+      const res = await uploadAPI.uploadProductImage(uploadData);
       setFormData(prev => ({ ...prev, image: res.data.fileUrl }));
       setImagePreview('');
     } catch (err) {
@@ -128,14 +128,22 @@ const AdminDashboard = () => {
     }
   };
 
-  // ✅ FIXED: Pass admin token as query param so window.open works
-  // (window.open cannot send Authorization headers, so we use ?token=)
-  const handleDownloadFile = (fileUrl, fileName) => {
+  const handleDownloadFile = async (fileUrl, fileName) => {
     if (!fileUrl) return;
-    const token = localStorage.getItem('adminToken') || '';
-    const baseURL = api.defaults.baseURL || 'https://educarepointcybercafe-1.onrender.com/api';
-    const proxyUrl = `${baseURL}/download?fileUrl=${encodeURIComponent(fileUrl)}&fileName=${encodeURIComponent(fileName || 'order-file.pdf')}&token=${encodeURIComponent(token)}`;
-    window.open(proxyUrl, '_blank');
+    try {
+      const response = await api.get('/download', {
+        params: { fileUrl, fileName: fileName || 'order-file.pdf' },
+        responseType: 'blob'
+      });
+      const downloadUrl = URL.createObjectURL(response.data);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = fileName || 'order-file.pdf';
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
+    } catch (err) {
+      alert(err.response?.data?.message || 'Could not download this file');
+    }
   };
 
   // ✅ FIXED: Call API logout so server invalidates the JWT in Redis
@@ -328,7 +336,16 @@ const AdminDashboard = () => {
                   {order.deliveryType !== 'delivery' && order.pickupTime && (
                     <p><strong>⏰ Pickup Time:</strong> {order.pickupTime}</p>
                   )}
-                  <p><strong>Amount:</strong> ₹{order.totalPrice}</p>
+                  {order.serviceCostPending ? (
+                    <>
+                      {order.items?.length > 0 && <p><strong>Product subtotal:</strong> ₹{order.totalPrice}</p>}
+                      <p><strong>Service cost:</strong> Confirm at shop</p>
+                    </>
+                  ) : order.serviceType === 'product-order' ? (
+                    <p><strong>Product total:</strong> ₹{order.totalPrice}</p>
+                  ) : (
+                    <p><strong>Amount:</strong> ₹{order.totalPrice}</p>
+                  )}
                   <p><strong>Payment:</strong> {order.paymentMethod === 'upi' ? 'UPI' : 'Cash on Delivery'}</p>
                   {order.pages > 1 && <p><strong>Pages:</strong> {order.pages} × {order.copies} copies</p>}
                   {order.notes && <p><strong>Notes:</strong> {order.notes}</p>}

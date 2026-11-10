@@ -16,6 +16,7 @@ api.interceptors.request.use((config) => {
     // Determine if this request is specifically for admin operations
     const isAdminRequest =
         url.startsWith('/products/admin') ||
+        url.startsWith('/upload/product-image') ||
         url.startsWith('/auth/admin') ||
         url.startsWith('/download') ||
         url.includes('/verify-payment') ||
@@ -55,11 +56,14 @@ export const orderAPI = {
         headers: { 'Content-Type': 'multipart/form-data' }
     }),
     verifyPayment: (id, paymentStatus) => api.put(`/orders/${id}/verify-payment`, { paymentStatus }),
-    getByPhone: (phone) => api.get(`/orders/by-phone/${phone}`)
+    lookup: (phone, orderId) => api.post('/orders/lookup', { phone, orderId })
 };
 
 export const uploadAPI = {
     uploadFile: (formData) => api.post('/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+    }),
+    uploadProductImage: (formData) => api.post('/upload/product-image', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
     })
 };

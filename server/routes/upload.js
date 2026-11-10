@@ -5,6 +5,8 @@ const { cloudinary } = require("../config/cloudinary");
 const streamifier = require("streamifier");
 const AppError = require('../utils/AppError');
 const catchAsync = require('../utils/catchAsync');
+const hasExpectedSignature = require('../utils/fileValidation');
+const auth = require('../middleware/auth');
 
 const upload = multer({
     storage: multer.memoryStorage(),
@@ -22,16 +24,29 @@ const uploadToCloudinary = (buffer, options) => {
 };
 
 // POST /api/upload - Supports both customer document uploads & admin product images (no auth barrier)
-router.post("/", upload.single("image"), catchAsync(async (req, res, next) => {
+const handleUpload = (productImage) => catchAsync(async (req, res, next) => {
     if (!req.file) return next(new AppError('No file uploaded', 400));
 
     const extension = req.file.originalname.split(".").pop().toLowerCase();
-    const allowedExtensions = ["pdf", "doc", "docx", "jpg", "jpeg", "png", "webp"];
+    const allowedExtensions = productImage ? ["jpg", "jpeg", "png", "webp"] : ["pdf", "doc", "docx"];
     if (!allowedExtensions.includes(extension)) {
         return next(new AppError(`Unsupported file format .${extension}. Allowed: ${allowedExtensions.join(', ')}`, 400));
     }
 
-    const isRaw = ["pdf", "doc", "docx"].includes(extension);
+    const allowedMimeTypes = {
+        pdf: ['application/pdf'],
+        doc: ['application/msword', 'application/octet-stream'],
+        docx: ['application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/octet-stream'],
+        jpg: ['image/jpeg'], jpeg: ['image/jpeg'], png: ['image/png'], webp: ['image/webp']
+    };
+    if (!allowedMimeTypes[extension]?.includes(req.file.mimetype)) {
+        return next(new AppError('File content type does not match its extension', 400));
+    }
+    if (!hasExpectedSignature(extension, req.file.buffer)) {
+        return next(new AppError('File content does not match its extension', 400));
+    }
+
+    const isRaw = !productImage;
     const resourceType = isRaw ? "raw" : "image";
     const folder = isRaw ? "educarepoint-customer-files" : "educarepoint-products";
 
@@ -56,7 +71,10 @@ router.post("/", upload.single("image"), catchAsync(async (req, res, next) => {
         fileName: req.file.originalname,
         fileSize: req.file.size
     });
-}));
+});
+
+router.post("/", upload.single("image"), handleUpload(false));
+router.post("/product-image", auth, upload.single("image"), handleUpload(true));
 
 router.get("/health", (req, res) => {
     res.json({ success: true, message: "Upload service ready", cloudinary: !!cloudinary.config().cloud_name });
