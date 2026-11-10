@@ -1,13 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { orderAPI, uploadAPI, productAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
 import { getNumericPrice } from '../context/CartContext';
 
 const Services = () => {
   const { user } = useAuth();
-  const navigate = useNavigate();
-
   const [formData, setFormData] = useState({
     serviceType: 'print',
     printType: 'black-white',
