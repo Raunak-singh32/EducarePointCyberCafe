@@ -9,12 +9,19 @@ const AppError = require('../utils/AppError');
 const catchAsync = require('../utils/catchAsync');
 const validate = require('../middleware/validate');
 const schemas  = require('../validators/schemas');
+const crypto = require('crypto');
 
 
 
 const generateToken = (userId) => {
     return jwt.sign({ id: userId }, process.env.JWT_SECRET, { expiresIn: '30d' });
 };
+
+const generateAdminToken = () => jwt.sign(
+    { id: 'admin', role: 'admin' },
+    process.env.JWT_SECRET,
+    { expiresIn: '8h' }
+);
 
 // Customer auth middleware (different from admin middleware/auth.js)
 const protect = async (req, res, next) => {
@@ -95,6 +102,16 @@ router.post('/login',validate(schemas.login), catchAsync(async (req, res, next) 
     });
 }));
 
+router.post('/admin/login', validate(schemas.login), catchAsync(async (req, res, next) => {
+    const { email, password } = req.body;
+    if (!process.env.ADMIN_EMAIL || !process.env.ADMIN_PASSWORD ||
+        email.toLowerCase() !== process.env.ADMIN_EMAIL.toLowerCase() ||
+        password !== process.env.ADMIN_PASSWORD) {
+        return next(new AppError('Invalid admin credentials', 401));
+    }
+    res.json({ success: true, token: generateAdminToken() });
+}));
+
 // POST /api/auth/logout
 router.post('/logout', protect, catchAsync(async (req, res, next) => {
     const token = req.headers.authorization.split(' ')[1];
@@ -141,11 +158,27 @@ router.get('/google', passport.authenticate('google', { scope: ['profile', 'emai
 
 router.get('/google/callback',
     passport.authenticate('google', { failureRedirect: `${process.env.CLIENT_URL}/login?error=google_failed` }),
-    (req, res) => {
+    async (req, res, next) => {
+      try {
         const token = generateToken(req.user._id);
-        const user = { _id: req.user._id, name: req.user.name, email: req.user.email, whatsapp: req.user.whatsapp, address: req.user.address };
-        res.redirect(`${process.env.CLIENT_URL}/login?token=${token}&user=${encodeURIComponent(JSON.stringify(user))}`);
+        const code = crypto.randomBytes(32).toString('hex');
+        await redis.setex(`oauth-code:${code}`, 60, JSON.stringify({
+            token,
+            user: { _id: req.user._id, name: req.user.name, email: req.user.email, whatsapp: req.user.whatsapp, address: req.user.address }
+        }));
+        res.redirect(`${process.env.CLIENT_URL}/login?oauth_code=${encodeURIComponent(code)}`);
+      } catch (error) {
+        next(error);
+      }
     }
 );
+
+router.post('/google/exchange', catchAsync(async (req, res, next) => {
+    const key = `oauth-code:${req.body.code || ''}`;
+    const payload = await redis.get(key);
+    if (!payload) return next(new AppError('Google login code is invalid or expired', 400));
+    await redis.del(key);
+    res.json({ success: true, ...JSON.parse(payload) });
+}));
 
 module.exports = { router, protect };

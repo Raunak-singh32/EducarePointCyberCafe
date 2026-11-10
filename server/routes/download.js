@@ -2,14 +2,28 @@ const express = require('express');
 const router = express.Router();
 const https = require('https');
 const http = require('http');
+const jwt = require('jsonwebtoken');
 
-// Backend proxy: fetches file from Cloudinary and streams it to admin
-// This fixes the multi-page PDF download issue because:
-// 1. Backend fetches directly from Cloudinary (no CORS issues)
-// 2. We set Content-Disposition: attachment header ourselves
-// 3. Admin downloads from our own backend, not Cloudinary
+// Backend proxy: fetches file from Cloudinary and streams it to admin with Content-Disposition
+// Supports token in Authorization header OR in ?token= query parameter (for window.open downloads)
 router.get('/', (req, res) => {
   try {
+    const authHeader = req.headers.authorization;
+    const token = (authHeader && authHeader.startsWith('Bearer ') && authHeader.split(' ')[1]) || req.query.token;
+
+    if (!token) {
+      return res.status(401).json({ success: false, message: 'Not authorized - no token' });
+    }
+
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      if (decoded.role !== 'admin') {
+        return res.status(403).json({ success: false, message: 'Administrator access required' });
+      }
+    } catch (err) {
+      return res.status(401).json({ success: false, message: 'Token invalid or expired' });
+    }
+
     const { fileUrl, fileName } = req.query;
 
     if (!fileUrl) {
@@ -17,7 +31,15 @@ router.get('/', (req, res) => {
     }
 
     // Security: only allow Cloudinary URLs
-    if (!fileUrl.includes('cloudinary.com')) {
+    let parsedUrl;
+    try {
+      parsedUrl = new URL(fileUrl);
+    } catch (_) {
+      return res.status(400).json({ success: false, message: 'Invalid file source' });
+    }
+    const isCloudinaryHost = parsedUrl.hostname === 'cloudinary.com' ||
+      parsedUrl.hostname.endsWith('.cloudinary.com');
+    if (parsedUrl.protocol !== 'https:' || !isCloudinaryHost) {
       return res.status(400).json({ success: false, message: 'Invalid file source' });
     }
 

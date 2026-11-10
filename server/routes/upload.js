@@ -8,7 +8,7 @@ const catchAsync = require('../utils/catchAsync');
 
 const upload = multer({
     storage: multer.memoryStorage(),
-    limits: { fileSize: 10 * 1024 * 1024 }
+    limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
 });
 
 const uploadToCloudinary = (buffer, options) => {
@@ -21,16 +21,24 @@ const uploadToCloudinary = (buffer, options) => {
     });
 };
 
+// POST /api/upload - Supports both customer document uploads & admin product images (no auth barrier)
 router.post("/", upload.single("image"), catchAsync(async (req, res, next) => {
     if (!req.file) return next(new AppError('No file uploaded', 400));
 
     const extension = req.file.originalname.split(".").pop().toLowerCase();
-    const resourceType = ["pdf", "doc", "docx"].includes(extension) ? "raw" : "image";
+    const allowedExtensions = ["pdf", "doc", "docx", "jpg", "jpeg", "png", "webp"];
+    if (!allowedExtensions.includes(extension)) {
+        return next(new AppError(`Unsupported file format .${extension}. Allowed: ${allowedExtensions.join(', ')}`, 400));
+    }
+
+    const isRaw = ["pdf", "doc", "docx"].includes(extension);
+    const resourceType = isRaw ? "raw" : "image";
+    const folder = isRaw ? "educarepoint-customer-files" : "educarepoint-products";
 
     let result;
     try {
         result = await uploadToCloudinary(req.file.buffer, {
-            folder: "educarepoint-products",
+            folder,
             resource_type: resourceType,
             use_filename: true,
             unique_filename: true,

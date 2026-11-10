@@ -1,55 +1,75 @@
 import axios from 'axios';
 
-const API_URL = 'https://educarepointcybercafe-1.onrender.com';
+const API_URL = window.location.hostname === 'localhost'
+    ? 'http://localhost:5000'
+    : 'https://educarepointcybercafe-1.onrender.com';
 
 const api = axios.create({
     baseURL: `${API_URL}/api`,
-    headers: {
-        'Content-Type': 'application/json'
-    }
+    headers: { 'Content-Type': 'application/json' }
 });
 
-// ── Auto-attach JWT token to every request if logged in ──
 api.interceptors.request.use((config) => {
-    const token = localStorage.getItem('educare_token');
+    const url = config.url || '';
+    const method = (config.method || 'get').toLowerCase();
+
+    // Determine if this request is specifically for admin operations
+    const isAdminRequest =
+        url.startsWith('/products/admin') ||
+        url.startsWith('/auth/admin') ||
+        url.startsWith('/download') ||
+        url.includes('/verify-payment') ||
+        url.includes('/stats/today') ||
+        (url === '/orders' && method === 'get') ||
+        (url.startsWith('/orders/') && !url.includes('/by-phone') && !url.includes('/payment-screenshot') && method !== 'post') ||
+        (url === '/products' && method !== 'get') ||
+        (url.startsWith('/products/') && method !== 'get');
+
+    let token = null;
+    if (isAdminRequest) {
+        token = localStorage.getItem('adminToken');
+    } else {
+        token = localStorage.getItem('educare_token');
+    }
+
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
     }
+
     return config;
 });
 
-// Product APIs
 export const productAPI = {
-    getAll: () => api.get('/products'),
+    getAll: (params = {}) => api.get('/products', { params }),
     getById: (id) => api.get(`/products/${id}`),
     create: (data) => api.post('/products', data),
     update: (id, data) => api.put(`/products/${id}`, data),
     delete: (id) => api.delete(`/products/${id}`)
 };
 
-// Order APIs
 export const orderAPI = {
     create: (data) => api.post('/orders', data),
-    getAll: () => api.get('/orders'),
+    getAll: (params = {}) => api.get('/orders', { params }),
     updateStatus: (id, status) => api.put(`/orders/${id}`, { status }),
-     uploadPaymentScreenshot: (id, formData) => api.post(`/orders/${id}/payment-screenshot`, formData, {
+    uploadPaymentScreenshot: (id, formData) => api.post(`/orders/${id}/payment-screenshot`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
     }),
     verifyPayment: (id, paymentStatus) => api.put(`/orders/${id}/verify-payment`, { paymentStatus }),
     getByPhone: (phone) => api.get(`/orders/by-phone/${phone}`)
 };
 
-// Upload APIs
 export const uploadAPI = {
     uploadFile: (formData) => api.post('/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
     })
 };
 
-// Auth APIs ── NEW ──
 export const authAPI = {
     register: (data) => api.post('/auth/register', data),
     login: (data) => api.post('/auth/login', data),
+    adminLogin: (data) => api.post('/auth/admin/login', data),
+    logout: () => api.post('/auth/logout'),
+    exchangeGoogleCode: (code) => api.post('/auth/google/exchange', { code }),
     getMe: () => api.get('/auth/me'),
     updateProfile: (data) => api.put('/auth/update', data)
 };

@@ -5019,3 +5019,12 @@ white-space: nowrap;
     font-size: 0.8rem;
   }
 }
+.product-image img {
+  object-fit: cover;
+}
+
+.product-image img::before {
+  content: '';
+  display: block;
+  background: var(--glass-bg);
+}

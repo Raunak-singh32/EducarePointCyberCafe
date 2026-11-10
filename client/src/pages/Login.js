@@ -17,20 +17,17 @@ function Login() {
   // Handle Google OAuth callback
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const token = params.get('token');
-    const userParam = params.get('user');
+    const code = params.get('oauth_code');
 
-    if (token && userParam) {
-      try {
-        const userData = JSON.parse(decodeURIComponent(userParam));
-        login(userData, token);
-        setSuccess(`Welcome, ${userData.name}! 🎉`);
-        setTimeout(() => {
-          navigate('/');
-        }, 1200);
-      } catch (e) {
-        setError('Google login failed. Please try again.');
-      }
+    if (code) {
+      authAPI.exchangeGoogleCode(code)
+        .then(response => {
+          login(response.data.user, response.data.token);
+          setSuccess(`Welcome, ${response.data.user.name}! 🎉`);
+          window.history.replaceState({}, document.title, '/login');
+          setTimeout(() => navigate('/'), 1200);
+        })
+        .catch(() => setError('Google login failed. Please try again.'));
     }
 
     const errorParam = params.get('error');

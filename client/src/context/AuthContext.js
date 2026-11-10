@@ -12,7 +12,12 @@ export function AuthProvider({ children }) {
     const token = localStorage.getItem('educare_token');
     const savedUser = localStorage.getItem('educare_user');
     if (token && savedUser) {
-      setUser(JSON.parse(savedUser));
+      try {
+        setUser(JSON.parse(savedUser));
+      } catch (_) {
+        localStorage.removeItem('educare_token');
+        localStorage.removeItem('educare_user');
+      }
     }
     setLoading(false);
   }, []);

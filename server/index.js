@@ -57,10 +57,14 @@ app.use(express.json());
 
 // ========== SESSION (required for passport) ==========
 app.use(session({
-    secret: process.env.JWT_SECRET,
+    secret: process.env.JWT_SECRET || 'educare-session-secret-fallback',
     resave: false,
     saveUninitialized: false,
-    cookie: { secure: false }
+    cookie: {
+        secure: process.env.NODE_ENV === 'production',
+        httpOnly: true,
+        sameSite: 'lax'
+    }
 }));
 
 // ========== PASSPORT ==========
@@ -84,7 +88,7 @@ app.use('/api/products', require('./routes/products'));
 app.use('/api/orders', require('./routes/orders'));
 app.use('/api/upload', require('./routes/upload'));
 app.use('/api/download', require('./routes/download')); // ✅ PDF download proxy
-app.use('/api/auth/login', adminLimiter);
+app.use('/api/auth/admin/login', adminLimiter);
 app.use('/api/auth', require('./routes/auth').router);
 
 // ========== TEST ROUTES ==========

@@ -17,13 +17,12 @@ const orderSchema = new mongoose.Schema({
   customerName: { type: String, required: true },
   customerPhone: { type: String, required: true },
   
-  // ── FIXED: pickupTime is NOT required anymore ──
+  // pickupTime is optional (e.g. for delivery orders)
   pickupTime: { type: String, default: '' },
   
   deliveryType: { type: String, enum: ['pickup', 'delivery'], default: 'pickup' },
   address: { type: String, default: '' },
   
-  // ── NEW: Payment fields ──
   paymentMethod: { 
     type: String, 
     enum: ['upi', 'cod'], 
@@ -42,13 +41,15 @@ const orderSchema = new mongoose.Schema({
   
   status: { 
     type: String, 
-    enum: ['pending', 'processing', 'ready', 'completed', 'cancelled'], 
+    enum: ['pending', 'processing', 'ready', 'completed', 'delivered', 'cancelled'], 
     default: 'pending' 
   },
   
+  deliveredAt: { type: Date },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 });
+
 // Index 1: Find all orders by a customer's phone number, newest first
 // ESR: customerPhone = Equality, createdAt = Sort
 orderSchema.index({ customerPhone: 1, createdAt: -1 });
@@ -59,5 +60,8 @@ orderSchema.index({ status: 1, createdAt: -1 });
 
 // Index 3: General sort by newest (order listing page)
 orderSchema.index({ createdAt: -1 });
+
+// Index 4: TTL index - auto-deletes orders 30 days after marked delivered/completed
+orderSchema.index({ deliveredAt: 1 }, { expireAfterSeconds: 30 * 24 * 60 * 60 });
 
 module.exports = mongoose.model('Order', orderSchema);

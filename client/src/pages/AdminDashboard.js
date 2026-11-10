@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import api, { productAPI, orderAPI, uploadAPI } from '../services/api';
+import api, { productAPI, orderAPI, authAPI, uploadAPI } from '../services/api';
 import { useNavigate } from 'react-router-dom';
 
 const AdminDashboard = () => {
@@ -12,34 +12,37 @@ const AdminDashboard = () => {
   const [editingId, setEditingId] = useState(null);
   const [imagePreview, setImagePreview] = useState('');
   const [productSearch, setProductSearch] = useState('');
+  const [orderStatusFilter, setOrderStatusFilter] = useState('all');
   const [formData, setFormData] = useState({
     name: '', category: 'pens', price: '', quantity: '', description: '', image: '', isPopular: false, isNew: false
   });
 
   const fetchProducts = async () => {
     try {
-      const res = await productAPI.getAll();
-      setProducts(res.data.products);
-    } catch (err) { console.error(err); }
+      // Pass limit=500 so ALL products are returned, not just first 12
+      const res = await productAPI.getAll({ limit: 500 });
+      setProducts(res.data.products || []);
+    } catch (err) { console.error('fetchProducts error:', err); }
   };
 
   const fetchEarnings = async () => {
     try {
       const res = await api.get('/orders/stats/today');
       setEarnings(res.data);
-    } catch (err) { console.error(err); }
+    } catch (err) { console.error('fetchEarnings error:', err); }
   };
 
   const fetchOrders = async () => {
     try {
-      const res = await orderAPI.getAll();
-      const newOrders = res.data.orders;
+      // Fetch up to 200 latest orders
+      const res = await orderAPI.getAll({ limit: 200 });
+      const newOrders = res.data.orders || [];
       if (newOrders.length > orders.length && orders.length > 0) {
         const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
         audio.play().catch(e => console.log('Audio blocked'));
       }
       setOrders(newOrders);
-    } catch (err) { console.error(err); }
+    } catch (err) { console.error('fetchOrders error:', err); }
   };
 
   useEffect(() => {
@@ -62,18 +65,40 @@ const AdminDashboard = () => {
       setFormData({ name: '', category: 'pens', price: '', quantity: '', description: '', image: '', isPopular: false, isNew: false });
       setImagePreview('');
       fetchProducts();
-    } catch (err) { alert('Error saving product'); }
+    } catch (err) {
+      // Show detailed error message from server
+      const msg = err.response?.data?.message || err.response?.data?.error || 'Error saving product. Please check all fields.';
+      alert(msg);
+    }
   };
 
   const handleEdit = (product) => {
-    setFormData({ name: product.name, category: product.category, price: product.price, quantity: product.quantity, description: product.description || '', image: product.image || '', isPopular: product.isPopular || false, isNew: product.isNew || false });
+    setFormData({
+      name: product.name,
+      category: product.category,
+      price: product.price,
+      quantity: product.quantity,
+      description: product.description || '',
+      image: product.image || '',
+      isPopular: product.isPopular || false,
+      isNew: product.isNew || false
+    });
     setEditingId(product._id);
     setImagePreview(product.image || '');
     setShowForm(true);
+    // Scroll to form
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Delete this product?')) { await productAPI.delete(id); fetchProducts(); }
+    if (window.confirm('Delete this product? This cannot be undone.')) {
+      try {
+        await productAPI.delete(id);
+        fetchProducts();
+      } catch (err) {
+        alert(err.response?.data?.message || 'Error deleting product');
+      }
+    }
   };
 
   const handleImageUpload = async (e) => {
@@ -86,29 +111,47 @@ const AdminDashboard = () => {
       const uploadData = new FormData();
       uploadData.append('image', file);
       const res = await uploadAPI.uploadFile(uploadData);
-      setFormData({ ...formData, image: res.data.fileUrl });
+      setFormData(prev => ({ ...prev, image: res.data.fileUrl }));
       setImagePreview('');
-    } catch (err) { alert('Error uploading image'); console.error(err); }
+    } catch (err) {
+      alert(err.response?.data?.message || 'Error uploading image');
+      console.error(err);
+    }
   };
 
   const updateOrderStatus = async (id, status) => {
-    try { await orderAPI.updateStatus(id, status); fetchOrders(); }
-    catch (err) { alert('Error updating order'); }
+    try {
+      await orderAPI.updateStatus(id, status);
+      fetchOrders();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Error updating order status');
+    }
   };
 
-  // ✅ FIXED: Backend proxy download
-  // Routes through our Express server which fetches from Cloudinary
-  // and streams with Content-Disposition: attachment header.
-  // Works for ALL file sizes and ALL page counts — guaranteed.
+  // ✅ FIXED: Pass admin token as query param so window.open works
+  // (window.open cannot send Authorization headers, so we use ?token=)
   const handleDownloadFile = (fileUrl, fileName) => {
     if (!fileUrl) return;
-    const baseURL = api.defaults.baseURL || 'https://educarepointcybercafe.onrender.com/api';
-    const proxyUrl = `${baseURL}/download?fileUrl=${encodeURIComponent(fileUrl)}&fileName=${encodeURIComponent(fileName || 'order-file.pdf')}`;
+    const token = localStorage.getItem('adminToken') || '';
+    const baseURL = api.defaults.baseURL || 'https://educarepointcybercafe-1.onrender.com/api';
+    const proxyUrl = `${baseURL}/download?fileUrl=${encodeURIComponent(fileUrl)}&fileName=${encodeURIComponent(fileName || 'order-file.pdf')}&token=${encodeURIComponent(token)}`;
     window.open(proxyUrl, '_blank');
   };
 
-  const logout = () => { localStorage.removeItem('adminToken'); navigate('/admin-login'); };
+  // ✅ FIXED: Call API logout so server invalidates the JWT in Redis
+  const logout = async () => {
+    try { await authAPI.logout(); } catch (_) { /* ignore errors */ }
+    localStorage.removeItem('adminToken');
+    navigate('/admin-login');
+  };
+
   const pendingOrders = orders.filter(o => o.status === 'pending').length;
+  const processingOrders = orders.filter(o => o.status === 'processing').length;
+
+  // ✅ NEW: Filter orders by status
+  const filteredOrders = orderStatusFilter === 'all'
+    ? orders
+    : orders.filter(o => o.status === orderStatusFilter);
 
   return (
     <div className="admin-page">
@@ -120,6 +163,7 @@ const AdminDashboard = () => {
       <div className="stats-box">
         <div className="stat-card"><h3>{products.length}</h3><p>Products</p></div>
         <div className="stat-card alert"><h3>{pendingOrders}</h3><p>Pending Orders</p></div>
+        <div className="stat-card"><h3>{processingOrders}</h3><p>Processing</p></div>
         <div className="stat-card"><h3>{orders.length}</h3><p>Total Orders</p></div>
         <div className="stat-card green"><h3>₹{earnings.totalEarnings}</h3><p>Today's Earnings</p></div>
         <div className="stat-card blue"><h3>{earnings.totalOrders}</h3><p>Today's Orders</p></div>
@@ -143,19 +187,24 @@ const AdminDashboard = () => {
               <h3>{editingId ? '✏️ Edit Product' : '➕ Add New Product'}</h3>
               <div className="form-row">
                 <input placeholder="Product Name" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} required />
+                {/* ✅ FIXED: Added all 9 categories */}
                 <select value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })}>
                   <option value="pens">Pens</option>
                   <option value="paper">Paper</option>
-                  <option value="copies">Copies</option>
+                  <option value="copies">Copies / Notebooks</option>
                   <option value="art-supplies">Art Supplies</option>
                   <option value="stationery">Stationery</option>
+                  <option value="craft">Craft</option>
+                  <option value="sports">Sports</option>
+                  <option value="utility">Utility</option>
+                  <option value="furniture">Furniture</option>
                 </select>
               </div>
               <div className="form-row">
                 <input type="text" placeholder="Price ₹" value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value })} required />
-                <input type="number" placeholder="Quantity" value={formData.quantity} onChange={e => setFormData({ ...formData, quantity: e.target.value })} required />
+                <input type="number" placeholder="Quantity" value={formData.quantity} onChange={e => setFormData({ ...formData, quantity: e.target.value })} required min="0" />
               </div>
-              <input placeholder="Description" value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} style={{ marginBottom: '20px' }} />
+              <input placeholder="Description (optional)" value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} style={{ marginBottom: '20px' }} />
               <div style={{ marginBottom: '20px' }}>
                 <label style={{ display: 'block', marginBottom: '10px', color: '#667eea', fontWeight: '600' }}>📸 Product Image:</label>
                 <input type="file" accept="image/*" onChange={handleImageUpload} style={{ marginBottom: '10px', padding: '10px', background: 'rgba(255,255,255,0.05)', borderRadius: '10px' }} />
@@ -173,7 +222,7 @@ const AdminDashboard = () => {
               </div>
               <div className="form-buttons">
                 <button type="submit" className="save-btn">💾 Save Product</button>
-                <button type="button" onClick={() => { setShowForm(false); setImagePreview(''); }} className="cancel-btn">❌ Cancel</button>
+                <button type="button" onClick={() => { setShowForm(false); setImagePreview(''); setEditingId(null); }} className="cancel-btn">❌ Cancel</button>
               </div>
             </form>
           )}
@@ -200,7 +249,8 @@ const AdminDashboard = () => {
                 .filter(p => p.name.toLowerCase().includes(productSearch.toLowerCase()))
                 .map(p => (
                 <tr key={p._id}>
-                  <td>{p.name}</td><td>{p.category}</td><td>₹{p.price}</td><td>{p.displayQuantity}</td>
+                  <td>{p.name}</td><td>{p.category}</td><td>₹{p.price}</td>
+                  <td>{p.quantity !== undefined ? p.quantity : (p.displayQuantity || '—')}</td>
                   <td><span className={`status ${p.stockStatus}`}>{p.stockStatus}</span></td>
                   <td>
                     <button onClick={() => handleEdit(p)} className="edit-btn">Edit</button>
@@ -210,134 +260,208 @@ const AdminDashboard = () => {
               ))}
             </tbody>
           </table>
+          {products.length === 0 && <p style={{ textAlign: 'center', opacity: 0.6, padding: '2rem' }}>No products yet. Click "+ Add Product" to get started.</p>}
         </>
       )}
 
-     {activeTab === 'orders' && (
-  <div className="orders-section">
-    {orders.length === 0 ? (
-      <p className="no-orders">No orders yet</p>
-    ) : (
-      orders.map(order => (
-        <div key={order._id} className={`order-card ${order.status}`}>
-          <div className="order-header">
-            <h4>Order #{order._id.slice(-6)}</h4>
-            <div className="status-badges">
-              {/* ── Payment Status Badge ── */}
-              <span className={`payment-badge ${order.paymentStatus}`}>
-                {order.paymentStatus === 'pending' && order.paymentMethod === 'upi' && '⏳ Payment Pending'}
-                {order.paymentStatus === 'pending' && order.paymentMethod === 'cod' && '💰 COD'}
-                {order.paymentStatus === 'paid' && '✅ Paid'}
-                {order.paymentStatus === 'failed' && '❌ Failed'}
-              </span>
-              {/* ── Order Status Badge ── */}
-              <span className={`order-status ${order.status}`}>{order.status}</span>
-            </div>
+      {activeTab === 'orders' && (
+        <div className="orders-section">
+          {/* ✅ NEW: Status filter tabs */}
+          <div className="order-filter-tabs" style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
+            {['all', 'pending', 'processing', 'ready', 'completed', 'delivered', 'cancelled'].map(s => (
+              <button
+                key={s}
+                onClick={() => setOrderStatusFilter(s)}
+                style={{
+                  padding: '6px 16px',
+                  borderRadius: '20px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                  fontSize: '0.82rem',
+                  background: orderStatusFilter === s ? '#667eea' : 'rgba(255,255,255,0.08)',
+                  color: orderStatusFilter === s ? '#fff' : '#ccc',
+                  transition: 'all 0.2s'
+                }}
+              >
+                {s === 'all' ? `All (${orders.length})` : `${s} (${orders.filter(o => o.status === s).length})`}
+              </button>
+            ))}
           </div>
-          
-          <div className="order-details">
-            <p><strong>Service:</strong> {order.serviceType}</p>
-            {order.items && order.items.length > 0 && (
-              <div className="order-items">
-                <p><strong>Items:</strong></p>
-                {order.items.map((item, idx) => (
-                  <p key={idx}>• {item.name} × {item.quantity} = ₹{item.price * item.quantity}</p>
-                ))}
-              </div>
-            )}
-            <p><strong>Customer:</strong> {order.customerName} ({order.customerPhone})</p>
-            <p><strong>Type:</strong> {order.deliveryType === 'delivery' ? '🚚 Home Delivery' : '🏪 Pickup'}</p>
-            {order.deliveryType === 'delivery' && order.address && (
-              <p><strong>📍 Address:</strong> {order.address}</p>
-            )}
-            {order.deliveryType !== 'delivery' && order.pickupTime && (
-              <p><strong>⏰ Pickup Time:</strong> {order.pickupTime}</p>
-            )}
-            <p><strong>Amount:</strong> ₹{order.totalPrice}</p>
-            <p><strong>Payment:</strong> {order.paymentMethod === 'upi' ? 'UPI' : 'Cash on Delivery'}</p>
-            {order.pages > 1 && <p><strong>Pages:</strong> {order.pages} × {order.copies} copies</p>}
-            {order.notes && <p><strong>Notes:</strong> {order.notes}</p>}
 
-            {/* ── Payment Screenshot Viewer ── */}
-            {order.paymentScreenshot && (
-              <div className="payment-screenshot">
-                <p><strong>📸 Payment Screenshot:</strong></p>
-                <a href={order.paymentScreenshot} target="_blank" rel="noreferrer">
-                  <img 
-                    src={order.paymentScreenshot} 
-                    alt="Payment proof" 
-                    className="screenshot-thumb"
-                  />
-                </a>
-              </div>
-            )}
+          {filteredOrders.length === 0 ? (
+            <p className="no-orders">No {orderStatusFilter !== 'all' ? orderStatusFilter : ''} orders</p>
+          ) : (
+            filteredOrders.map(order => (
+              <div key={order._id} className={`order-card ${order.status}`}>
+                <div className="order-header">
+                  <h4>Order #{order._id.slice(-6)}</h4>
+                  <div className="status-badges">
+                    {/* ── Payment Status Badge ── */}
+                    <span className={`payment-badge ${order.paymentStatus}`}>
+                      {order.paymentStatus === 'pending' && order.paymentMethod === 'upi' && '⏳ Payment Pending'}
+                      {order.paymentStatus === 'pending' && order.paymentMethod === 'cod' && '💰 COD'}
+                      {order.paymentStatus === 'paid' && '✅ Paid'}
+                      {order.paymentStatus === 'failed' && '❌ Failed'}
+                      {order.paymentStatus === 'refunded' && '↩️ Refunded'}
+                    </span>
+                    {/* ── Order Status Badge ── */}
+                    <span className={`order-status ${order.status}`}>{order.status}</span>
+                  </div>
+                </div>
 
-            {order.fileUrl && (
-              <p>
-                <strong>📎 File:</strong>{' '}
-                <button
-                  onClick={() => handleDownloadFile(order.fileUrl, order.fileName)}
-                  className="file-link"
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-                >
-                  📥 Download File {order.fileName ? `(${order.fileName})` : ''}
-                </button>
-              </p>
-            )}
-          </div>
-          
-          <div className="order-actions">
-            {/* ── UPI Pending: Verify/Reject ── */}
-            {order.paymentMethod === 'upi' && order.paymentStatus === 'pending' && (
-              <>
-                <button 
-                  onClick={() => orderAPI.verifyPayment(order._id, 'paid').then(() => fetchOrders())} 
-                  className="verify-btn"
-                >
-                  ✅ Verify Payment
-                </button>
-                <button 
-                  onClick={() => orderAPI.verifyPayment(order._id, 'failed').then(() => fetchOrders())} 
-                  className="reject-btn"
-                >
-                  ❌ Reject
-                </button>
-                <a 
-                  href={`https://wa.me/91${order.customerPhone}?text=Hi%20${order.customerName},%20please%20share%20your%20payment%20screenshot%20for%20order%20verification.`} 
-                  target="_blank" 
-                  rel="noreferrer" 
-                  className="whatsapp-btn"
-                >
-                  📱 Ask Screenshot
-                </a>
-              </>
-            )}
-            
-            {/* ── Normal flow after payment verified ── */}
-            {order.status === 'pending' && (order.paymentStatus === 'paid' || order.paymentMethod === 'cod') && (
-              <>
-                <button onClick={() => updateOrderStatus(order._id, 'processing')} className="process-btn">Start Processing</button>
-                <a href={`https://wa.me/91${order.customerPhone}?text=Hi%20${order.customerName},%20your%20order%20is%20confirmed!`} target="_blank" rel="noreferrer" className="whatsapp-btn">📱 WhatsApp</a>
-              </>
-            )}
-            {order.status === 'processing' && (
-              <>
-                <button onClick={() => updateOrderStatus(order._id, 'ready')} className="ready-btn">✅ Mark Ready</button>
-                <a href={`https://wa.me/91${order.customerPhone}?text=Hi%20${order.customerName},%20your%20order%20is%20ready!%20Come%20and%20pickup.`} target="_blank" rel="noreferrer" className="whatsapp-btn">📱 WhatsApp Ready</a>
-              </>
-            )}
-            {order.status === 'ready' && (
-              <>
-                <button onClick={() => updateOrderStatus(order._id, 'completed')} className="complete-btn">Complete</button>
-                <span className="done-text">Waiting for {order.deliveryType === 'delivery' ? 'delivery' : 'pickup'}</span>
-              </>
-            )}
-          </div>
+                <div className="order-details">
+                  <p><strong>Service:</strong> {order.serviceType}</p>
+                  {order.items && order.items.length > 0 && (
+                    <div className="order-items">
+                      <p><strong>Items:</strong></p>
+                      {order.items.map((item, idx) => (
+                        <p key={idx}>• {item.name} × {item.quantity} = ₹{item.price * item.quantity}</p>
+                      ))}
+                    </div>
+                  )}
+                  <p><strong>Customer:</strong> {order.customerName} ({order.customerPhone})</p>
+                  <p><strong>Type:</strong> {order.deliveryType === 'delivery' ? '🚚 Home Delivery' : '🏪 Pickup'}</p>
+                  {order.deliveryType === 'delivery' && order.address && (
+                    <p><strong>📍 Address:</strong> {order.address}</p>
+                  )}
+                  {order.deliveryType !== 'delivery' && order.pickupTime && (
+                    <p><strong>⏰ Pickup Time:</strong> {order.pickupTime}</p>
+                  )}
+                  <p><strong>Amount:</strong> ₹{order.totalPrice}</p>
+                  <p><strong>Payment:</strong> {order.paymentMethod === 'upi' ? 'UPI' : 'Cash on Delivery'}</p>
+                  {order.pages > 1 && <p><strong>Pages:</strong> {order.pages} × {order.copies} copies</p>}
+                  {order.notes && <p><strong>Notes:</strong> {order.notes}</p>}
+                  <p style={{ opacity: 0.5, fontSize: '0.8rem' }}>
+                    Placed: {new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                  </p>
+
+                  {/* ── Payment Screenshot Viewer ── */}
+                  {order.paymentScreenshot && (
+                    <div className="payment-screenshot">
+                      <p><strong>📸 Payment Screenshot:</strong></p>
+                      <a href={order.paymentScreenshot} target="_blank" rel="noreferrer">
+                        <img
+                          src={order.paymentScreenshot}
+                          alt="Payment proof"
+                          className="screenshot-thumb"
+                        />
+                      </a>
+                    </div>
+                  )}
+
+                  {/* ── File Download ── */}
+                  {order.fileUrl && (
+                    <p>
+                      <strong>📎 File:</strong>{' '}
+                      <button
+                        onClick={() => handleDownloadFile(order.fileUrl, order.fileName)}
+                        className="file-link"
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: '#667eea', textDecoration: 'underline' }}
+                      >
+                        📥 Download {order.fileName ? `(${order.fileName})` : 'File'}
+                      </button>
+                    </p>
+                  )}
+                </div>
+
+                <div className="order-actions">
+                  {/* ── UPI Pending: Verify/Reject ── */}
+                  {order.paymentMethod === 'upi' && order.paymentStatus === 'pending' && (
+                    <>
+                      <button
+                        onClick={() => orderAPI.verifyPayment(order._id, 'paid').then(() => fetchOrders())}
+                        className="verify-btn"
+                      >
+                        ✅ Verify Payment
+                      </button>
+                      <button
+                        onClick={() => orderAPI.verifyPayment(order._id, 'failed').then(() => fetchOrders())}
+                        className="reject-btn"
+                      >
+                        ❌ Reject
+                      </button>
+                      <a
+                        href={`https://wa.me/91${order.customerPhone}?text=Hi%20${encodeURIComponent(order.customerName)},%20please%20share%20your%20payment%20screenshot%20for%20order%20%23${order._id.slice(-6)}%20verification.`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="whatsapp-btn"
+                      >
+                        📱 Ask Screenshot
+                      </a>
+                    </>
+                  )}
+
+                  {/* ── Normal flow after payment verified ── */}
+                  {order.status === 'pending' && (order.paymentStatus === 'paid' || order.paymentMethod === 'cod') && (
+                    <>
+                      <button onClick={() => updateOrderStatus(order._id, 'processing')} className="process-btn">▶ Start Processing</button>
+                      <a
+                        href={`https://wa.me/91${order.customerPhone}?text=Hi%20${encodeURIComponent(order.customerName)},%20your%20order%20%23${order._id.slice(-6)}%20is%20confirmed!`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="whatsapp-btn"
+                      >
+                        📱 WhatsApp
+                      </a>
+                    </>
+                  )}
+
+                  {order.status === 'processing' && (
+                    <>
+                      <button onClick={() => updateOrderStatus(order._id, 'ready')} className="ready-btn">✅ Mark Ready</button>
+                      <a
+                        href={`https://wa.me/91${order.customerPhone}?text=Hi%20${encodeURIComponent(order.customerName)},%20your%20order%20%23${order._id.slice(-6)}%20is%20ready!%20${order.deliveryType === 'delivery' ? 'We%20will%20deliver%20soon.' : 'Come%20and%20pickup.'}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="whatsapp-btn"
+                      >
+                        📱 WhatsApp Ready
+                      </a>
+                    </>
+                  )}
+
+                  {order.status === 'ready' && (
+                    <>
+                      <button onClick={() => updateOrderStatus(order._id, 'completed')} className="complete-btn">🏁 Complete</button>
+                      <span className="done-text">Waiting for {order.deliveryType === 'delivery' ? 'delivery' : 'pickup'}</span>
+                    </>
+                  )}
+
+                  {/* ✅ NEW: Delivered step after completed */}
+                  {order.status === 'completed' && (
+                    <>
+                      <button onClick={() => updateOrderStatus(order._id, 'delivered')} className="deliver-btn"
+                        style={{ background: 'linear-gradient(135deg, #10b981, #059669)', color: '#fff', border: 'none', padding: '8px 18px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}>
+                        🚀 Mark Delivered
+                      </button>
+                      <a
+                        href={`https://wa.me/91${order.customerPhone}?text=Hi%20${encodeURIComponent(order.customerName)},%20your%20order%20%23${order._id.slice(-6)}%20has%20been%20delivered!%20Thank%20you%20for%20choosing%20Educare%20Point.%20%F0%9F%99%8F`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="whatsapp-btn"
+                      >
+                        📱 WhatsApp Thanks
+                      </a>
+                    </>
+                  )}
+
+                  {/* Cancel button for pending/processing orders */}
+                  {(order.status === 'pending' || order.status === 'processing') && (
+                    <button
+                      onClick={() => { if (window.confirm('Cancel this order?')) updateOrderStatus(order._id, 'cancelled'); }}
+                      className="delete-btn"
+                      style={{ marginLeft: '0.5rem' }}
+                    >
+                      🚫 Cancel
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))
+          )}
         </div>
-      ))
-    )}
-  </div>
-)}
+      )}
     </div>
   );
 };

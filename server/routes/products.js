@@ -8,23 +8,35 @@ const validate = require('../middleware/validate');
 const schemas = require('../validators/schemas');
 const redis = require('../config/redis');
 
-// GET all products (public) — with pagination, filtering, sorting
+// Helper to safely invalidate redis cache
+const invalidateProductCache = async () => {
+    try {
+        await redis.del('products:all');
+    } catch (err) {
+        console.error('Redis cache clear error:', err.message);
+    }
+};
+
+// GET all products (public) — with filtering, sorting, and generous pagination
 router.get('/', catchAsync(async (req, res, next) => {
     const { category, search, sort } = req.query;
 
-    // Pagination params — defaults: page 1, 12 products per page
-    const page  = Math.max(1, parseInt(req.query.page)  || 1);
-    const limit = Math.min(50, parseInt(req.query.limit) || 12);
+    const page  = Math.max(1, parseInt(req.query.page) || 1);
+    // If limit is 'all' or omitted, return up to 500 products so client-side catalog works completely
+    const isAll = req.query.limit === 'all' || !req.query.limit;
+    const limit = isAll ? 500 : Math.min(500, parseInt(req.query.limit) || 50);
     const skip  = (page - 1) * limit;
 
-    const noFilters = !category && !search && !sort && page === 1;
+    const noFilters = !category && !search && !sort && page === 1 && isAll;
 
-    // Cache only the first page with no filters
+    // Cache when fetching default full catalog
     if (noFilters) {
-        const cached = await redis.get('products:all');
-        if (cached) {
-            return res.json({ success: true, fromCache: true, ...JSON.parse(cached) });
-        }
+        try {
+            const cached = await redis.get('products:all');
+            if (cached) {
+                return res.json({ success: true, fromCache: true, ...JSON.parse(cached) });
+            }
+        } catch (_) {}
     }
 
     // Build query
@@ -57,9 +69,10 @@ router.get('/', catchAsync(async (req, res, next) => {
         image:           p.image,
         stockStatus:     p.stockStatus,
         displayQuantity: p.displayQuantity,
+        quantity:        p.quantity,
         sku:             p.sku,
-        isPopular:       p.isPopular,
-        isNew:           p.isNew
+        isPopular:       Boolean(p.isPopular),
+        isNew:           Boolean(p.isNew)
     }));
 
     const responseData = {
@@ -74,9 +87,10 @@ router.get('/', catchAsync(async (req, res, next) => {
         }
     };
 
-    // Cache only first page with no filters
     if (noFilters) {
-        await redis.setex('products:all', 300, JSON.stringify(responseData));
+        try {
+            await redis.setex('products:all', 300, JSON.stringify(responseData));
+        } catch (_) {}
     }
 
     res.json({ success: true, fromCache: false, ...responseData });
@@ -108,7 +122,10 @@ router.get('/:id', catchAsync(async (req, res, next) => {
             image:           product.image,
             stockStatus:     product.stockStatus,
             displayQuantity: product.displayQuantity,
-            sku:             product.sku
+            quantity:        product.quantity,
+            sku:             product.sku,
+            isPopular:       Boolean(product.isPopular),
+            isNew:           Boolean(product.isNew)
         }
     });
 }));
@@ -118,20 +135,30 @@ router.post('/', auth, validate(schemas.createProduct), catchAsync(async (req, r
     const { name, category, subcategory, description, price, costPrice,
             quantity, image, showQuantity, lowStockAlert } = req.body;
 
-    if (!name || !category || !price) {
+    if (!name || !category || price === undefined || price === null || price === '') {
         return next(new AppError('Name, category and price are required', 400));
     }
 
+    const isPopular = req.body.isPopular !== undefined ? Boolean(req.body.isPopular) : Boolean(req.body.popular);
+    const isNew = req.body.isNew !== undefined ? Boolean(req.body.isNew) : false;
+
     const product = new Product({
-        name, category, subcategory, description, price, costPrice,
-        quantity:      quantity || 0,
-        image,
-        showQuantity:  showQuantity || false,
-        lowStockAlert: lowStockAlert || 5
+        name: String(name).trim(),
+        category,
+        subcategory: subcategory ? String(subcategory).trim() : '',
+        description: description ? String(description).trim() : '',
+        price: String(price).trim(),
+        costPrice: costPrice ? String(costPrice).trim() : '0',
+        quantity: Math.max(0, parseInt(quantity) || 0),
+        image: image || '',
+        showQuantity: Boolean(showQuantity),
+        lowStockAlert: Math.max(0, parseInt(lowStockAlert) || 5),
+        isPopular,
+        isNew
     });
 
     await product.save();
-    await redis.del('products:all'); // invalidate cache on write
+    await invalidateProductCache();
 
     res.status(201).json({ success: true, product });
 }));
@@ -139,6 +166,10 @@ router.post('/', auth, validate(schemas.createProduct), catchAsync(async (req, r
 // PUT update product (admin only)
 router.put('/:id', auth, catchAsync(async (req, res, next) => {
     const updates = { ...req.body, updatedAt: Date.now() };
+
+    if (updates.isPopular !== undefined) updates.isPopular = Boolean(updates.isPopular);
+    if (updates.popular !== undefined) updates.isPopular = Boolean(updates.popular);
+    if (updates.isNew !== undefined) updates.isNew = Boolean(updates.isNew);
 
     const product = await Product.findByIdAndUpdate(
         req.params.id,
@@ -148,7 +179,7 @@ router.put('/:id', auth, catchAsync(async (req, res, next) => {
 
     if (!product) return next(new AppError('Product not found', 404));
 
-    await redis.del('products:all'); // invalidate cache on write
+    await invalidateProductCache();
 
     res.json({ success: true, product });
 }));
@@ -163,7 +194,7 @@ router.delete('/:id', auth, catchAsync(async (req, res, next) => {
 
     if (!product) return next(new AppError('Product not found', 404));
 
-    await redis.del('products:all'); // invalidate cache on write
+    await invalidateProductCache();
 
     res.json({ success: true, message: 'Product deleted successfully' });
 }));

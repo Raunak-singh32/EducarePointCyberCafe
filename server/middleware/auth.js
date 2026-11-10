@@ -19,9 +19,12 @@ const auth = (req, res, next) => {
             }
 
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
+            if (decoded.role !== 'admin') {
+                return next(new AppError('Administrator access required', 403));
+            }
             req.admin = decoded;
             next();
-        });
+        }).catch(() => next(new AppError('Authentication service unavailable', 503)));
 
     } catch (error) {
         return next(new AppError('Token invalid or expired', 401));

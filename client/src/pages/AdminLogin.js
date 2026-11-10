@@ -16,7 +16,7 @@ const AdminLogin = () => {
 
     try {
       // 2. Clear payload keys aligning fully against backend extraction properties
-      const response = await authAPI.login({
+      const response = await authAPI.adminLogin({
     email: formData.email,
     password: formData.password
     });
